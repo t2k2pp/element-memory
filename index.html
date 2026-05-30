@@ -56,6 +56,7 @@
         background: var(--card);
         box-shadow: var(--shadow);
       }
+      body.game-screen-active .hero { display: none; }
       .hero h1 { margin: 0; font-size: clamp(1.2rem, 1.6vw, 1.8rem); line-height: 1.1; }
       .hero p { margin: 2px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.2; }
       .sparkles { font-size: 1.25rem; white-space: nowrap; }
@@ -107,6 +108,41 @@
       .legend-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
       table { width: 100%; border-collapse: collapse; }
       th, td { padding: 7px 8px; border-bottom: 1px solid rgba(107,124,255,0.12); text-align: left; vertical-align: top; font-size: 0.84rem; }
+      .answer-link {
+        appearance: none;
+        border: none;
+        background: rgba(107,124,255,0.08);
+        color: var(--text);
+        border-radius: 10px;
+        padding: 4px 8px;
+        font: inherit;
+        font-weight: 700;
+        text-align: left;
+        cursor: pointer;
+      }
+      .answer-link:hover {
+        background: rgba(107,124,255,0.16);
+      }
+      .mnemonic-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(280px, 0.9fr); gap: 10px; align-items: start; min-height: 0; }
+      .mnemonic-list { display: grid; gap: 8px; max-height: min(62vh, 640px); overflow: auto; padding-right: 4px; }
+      .mnemonic-button {
+        width: 100%;
+        border: 1px solid rgba(107,124,255,0.12);
+        background: rgba(255,255,255,0.9);
+        border-radius: 14px;
+        padding: 10px 12px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .mnemonic-button.active {
+        border-color: rgba(107,124,255,0.36);
+        background: linear-gradient(180deg, rgba(107,124,255,0.12), rgba(255,255,255,0.96));
+      }
+      .mnemonic-button .phrase-line { font-size: 1rem; font-weight: 800; color: var(--text); }
+      .mnemonic-button .meta-line { margin-top: 4px; font-size: 0.76rem; color: var(--muted); }
+      .mnemonic-detail { position: sticky; top: 0; }
+      .mnemonic-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+      .mnemonic-tag { padding: 4px 8px; border-radius: 999px; background: rgba(107,124,255,0.1); color: var(--muted); font-size: 0.72rem; }
       .weak-list { display: grid; gap: 6px; }
       .weak-item { padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,0.82); border: 1px solid rgba(107,124,255,0.12); }
       .empty-note { padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.8); color: var(--muted); }
@@ -115,25 +151,29 @@
       .game-layout { display: grid; grid-template-rows: auto 1fr; gap: 6px; flex: 1; min-height: 0; }
       .game-topbar {
         display: flex;
-        flex-wrap: wrap;
         align-items: center;
         gap: 6px;
         padding: 6px 8px;
+        flex-wrap: nowrap;
+        overflow: hidden;
       }
       .game-topbar .title-chip {
-        display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        padding: 6px 10px;
-        border-radius: 999px;
-        background: linear-gradient(135deg, rgba(107,124,255,0.12), rgba(255,155,113,0.14));
-        font-weight: 800;
+        display: block;
+        min-width: 0;
+        flex: 1 1 auto;
+        padding: 0;
+        background: transparent;
+        border: none;
+        font-weight: 900;
         color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
       }
-      .game-topbar .toolbar-spacer { flex: 1; min-width: 8px; }
       .game-topbar .user-chip {
         display: inline-flex;
         align-items: center;
+        flex: 0 0 auto;
         padding: 5px 10px;
         border-radius: 999px;
         background: rgba(255,255,255,0.9);
@@ -141,8 +181,14 @@
         color: var(--muted);
         font-size: 0.78rem;
         font-weight: 700;
+        white-space: nowrap;
       }
-      .question-panel { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr); gap: 8px; min-height: 0; align-items: stretch; }
+      .game-topbar .ghost-button,
+      .game-topbar .pill {
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+      .question-panel { display: grid; grid-template-columns: minmax(0, 1.45fr) minmax(280px, 0.9fr); gap: 8px; min-height: 0; align-items: stretch; }
       .question-box {
         background: linear-gradient(135deg, rgba(107,124,255,0.16), rgba(255,155,113,0.18)); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; min-height: 88px;
       }
@@ -223,14 +269,15 @@
       @media (max-width: 1180px) {
         body { overflow: auto; }
         .app-shell { width: calc(100vw - 10px); min-height: calc(100vh - 10px); height: auto; margin: 5px auto; padding: 6px; }
-        .management-layout, .game-header, .screen-intro, .table-layout { grid-template-columns: 1fr; }
+        .management-layout, .game-header, .screen-intro, .table-layout, .mnemonic-layout { grid-template-columns: 1fr; }
         .management-layout { gap: 8px; }
         .sidebar { grid-template-rows: auto auto auto; }
         .game-layout { grid-template-rows: auto auto; }
         .game-topbar { padding: 5px 6px; gap: 5px; }
-        .game-topbar .title-chip { padding: 5px 8px; font-size: 0.82rem; }
-        .game-topbar .user-chip { padding: 4px 8px; font-size: 0.74rem; }
-        .question-panel { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr); gap: 6px; }
+        .game-topbar .title-chip { padding: 0; font-size: 0.8rem; }
+        .game-topbar .user-chip { padding: 4px 8px; font-size: 0.72rem; max-width: 22vw; overflow: hidden; text-overflow: ellipsis; }
+        .game-topbar .ghost-button, .game-topbar .pill { font-size: 0.78rem; padding-left: 8px; padding-right: 8px; }
+        .question-panel { grid-template-columns: minmax(0, 1.15fr) minmax(240px, 0.95fr); gap: 6px; }
         .question-box { min-height: 74px; padding: 8px 10px; }
         .question-label { font-size: 0.72rem; }
         .question-value { font-size: clamp(1.45rem, 3vw, 2.3rem); }
@@ -476,7 +523,12 @@
       function getActiveUser() { return state.store.users.find((user) => user.id === state.activeUserId) || state.store.users[0] || null; }
       function getSelectedElement() { return ELEMENTS.find((element) => element.symbol === state.selectedElementSymbol) || ELEMENTS[0]; }
       function setActiveUser(id) { state.activeUserId = id; state.game = createEmptyGame(); saveStore(); renderAll(); }
-      function switchScreen(screen) { state.currentScreen = screen; refs.managementScreen.classList.toggle('active', screen === 'management'); refs.gameScreen.classList.toggle('active', screen === 'game'); }
+      function switchScreen(screen) {
+        state.currentScreen = screen;
+        refs.managementScreen.classList.toggle('active', screen === 'management');
+        refs.gameScreen.classList.toggle('active', screen === 'game');
+        document.body.classList.toggle('game-screen-active', screen === 'game');
+      }
       function switchView(view) { state.currentView = view; renderAll(); }
       function renderAll() { renderManagementScreen(); renderGameScreen(); switchScreen(state.currentScreen); }
       function renderManagementScreen() {
@@ -530,7 +582,7 @@
         return `
           <div class="screen-intro">
             <div class="tile"><h2>🎮 モード選択</h2><p>10問1セット。未出題や苦手寄りの問題を優先しますが、少しの誤答だけでは苦手Topに入りにくいよう改善しました。</p><div class="mode-grid" style="margin-top:10px;"><button class="tile-button" data-start-mode="symbolToName" type="button">🔤 記号 → 元素名</button><button class="tile-button" data-start-mode="nameToSymbol" type="button">📝 元素名 → 記号</button></div></div>
-            <div class="tile"><h3>🧠 ${escapeHtml(user?.name || 'ユーザー')} さんの苦手トップ</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${item.symbol} / ${item.name}</strong><br /><span class="sub">誤答 ${item.wrong} 回 ・ 出題 ${item.asked} 回 ・ 判定 ${item.levelLabel}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。まずは何セットか遊んでみよう！</div>'}</div></div>
+            <div class="tile"><h3>🧠 ${escapeHtml(user?.name || 'ユーザー')} さんの苦手トップ</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${escapeHtml(item.symbol)} / ${escapeHtml(item.name)}</strong><br /><span class="sub">誤答 ${item.wrong} 回 ・ 出題 ${item.asked} 回 ・ 判定 ${escapeHtml(item.levelLabel)}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。まずは何セットか遊んでみよう！</div>'}</div></div>
           </div>
           <div class="cards-grid scroll-area">
             <div class="tile"><h3>📚 学習のしかた</h3><ul><li>ランダム出題（未出題・誤答を優先）</li><li>1セット10問</li><li>ユーザーごとに成績を保存</li><li>元素記号表から詳細情報を見て関連づけて覚える</li></ul></div>
@@ -551,28 +603,34 @@
       }
       function renderMnemonicView() {
         const famousPhrases = [
-          { title: '1〜20番の定番', phrase: '水兵リーベ ぼくの船 なまがるシップス クラークか', detail: 'H He / Li Be / B C N O F Ne / Na Mg Al Si P S / Cl Ar K Ca', note: '最初に覚える定番。' },
-          { title: '21〜30番', phrase: 'すっちまん ふぇこ にどう あえん', detail: 'Sc Ti / V Cr Mn / Fe Co Ni / Cu Zn', note: '4周期前半金属。' },
-          { title: '31〜36番', phrase: 'がげあっせ ぶらくり', detail: 'Ga Ge As Se / Br Kr', note: '短く区切って暗唱。' },
-          { title: '37〜54番', phrase: 'ルビー ストロン イット ジル ニオ モリ テク ルロ パラ 銀 カド イン スズ アンチ テル ヨウ キセ', detail: 'Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe', note: '長いので2〜3元素ずつ区切る。' },
-          { title: '55〜56番 + ランタノイド入口', phrase: 'セシ バリ ラン セ プラ ネオ', detail: 'Cs Ba La Ce Pr Nd', note: '6周期の入口。' },
-          { title: '日本生まれの元素', phrase: 'にほん生まれ ニホニウム', detail: 'Nh = ニホニウム（113番）', note: '豆知識として人気。' }
+          { id: 'basic20', title: '1〜20番の定番', phrase: '水兵リーベ ぼくの船 なまがるシップス クラークか', detail: 'H He / Li Be / B C N O F Ne / Na Mg Al Si P S / Cl Ar K Ca', note: '教科書・塾・参考書で最も見かけやすい定番。まずはここを起点に覚える。', hint: '「水兵リーベ」は 1〜20番をまとめて追う王道フレーズ。', overlap: '最重要の基本並び' },
+          { id: 'sc-kr', title: '21〜36番の定番つなぎ', phrase: 'すっちまん ふぇこ にどう あえん がげあっせ ぶらくり', detail: 'Sc Ti / V Cr Mn / Fe Co Ni / Cu Zn / Ga Ge As Se / Br Kr', note: '4周期前半〜Br, Krまでを一息でつなぐ時の言い方。区切って唱えてもOK。', hint: 'Sc〜Kr は受験で語呂化されやすい帯。', overlap: '31〜36番と重複あり' },
+          { id: 'halogen', title: 'ハロゲンの有名語呂', phrase: 'ふっくらブラジャー愛のあと', detail: 'F Cl Br I At', note: 'ハロゲン元素の並び。語感が強く、有名度も高い。', hint: 'フッ素→塩素→臭素→ヨウ素→アスタチン。', overlap: '17族だけを独立暗記' },
+          { id: 'noble', title: '希ガスの有名語呂', phrase: '変なねーちゃん あるくクセのあるロンドン', detail: 'He Ne Ar Kr Xe Rn', note: '希ガス元素の並びを覚える古典的な語呂の一つ。表現違いは多い。', hint: 'ヘリウム→ネオン→アルゴン→クリプトン→キセノン→ラドン。', overlap: '18族だけを独立暗記' },
+          { id: 'alkali', title: 'アルカリ金属の語呂', phrase: 'リッチな カリスマ ルビー フラン', detail: 'Li Na K Rb Cs Fr', note: 'アルカリ金属だけを縦に確認する用。完全固定の定番というより、よく使われる覚え方の系統。', hint: 'Li, Na, K の序盤が特に重要。', overlap: '1族だけを独立暗記' },
+          { id: 'alkaline', title: 'アルカリ土類金属の語呂', phrase: 'ベッドで マンガ かなり スラスラ ラジオ', detail: 'Be Mg Ca Sr Ba Ra', note: '2族を縦に追うための語呂。元素群のまとまり理解に向く。', hint: 'Be→Mg→Ca→Sr→Ba→Ra。', overlap: '2族だけを独立暗記' },
+          { id: 'rb-xe', title: '37〜54番の長い帯', phrase: 'ルビー ストロン イット ジル ニオブ モリテク ルロ パラ銀 カドイン スズアン テルヨウ キセ', detail: 'Rb Sr / Y Zr / Nb Mo Tc / Ru Rh Pd / Ag Cd In / Sn Sb Te / I Xe', note: '語り手ごとの差が大きい帯。細かく区切って、自分の言いやすい節回しに寄せると覚えやすい。', hint: 'Rb〜Xe はまとまりごとに覚えるのがコツ。', overlap: '複数流派あり' },
+          { id: 'lanthanoid-entry', title: '6周期入口', phrase: 'セシ バリ ラン セ プラ ネオ', detail: 'Cs Ba La Ce Pr Nd', note: '6周期の入口とランタノイドの最初を結ぶ入り口語呂。', hint: 'Cs, Ba のあと La, Ce, Pr, Nd。', overlap: 'ランタノイド導入用' },
+          { id: 'nihonium', title: '日本生まれの元素', phrase: 'にほん生まれ ニホニウム', detail: 'Nh = ニホニウム（113番）', note: '並び暗記ではなく豆知識型。会話のきっかけとして印象に残しやすい。', hint: '2016年命名の日本ゆかり元素。', overlap: '話題づくり用' }
         ];
-        return `<div class="tile"><h2>🎵 語呂あわせモード</h2><p>元素を並びで覚えるための有名な暗記フレーズを中心にまとめました。</p></div><div class="cards-grid">${famousPhrases.map((item) => `<div class="tile"><h3>${item.title}</h3><p><strong>語呂:</strong> ${item.phrase}</p><p><strong>対応:</strong> ${item.detail}</p><p><strong>使い方:</strong> ${item.note}</p></div>`).join('')}</div>`;
+        const selectedId = state.selectedMnemonicId || famousPhrases[0].id;
+        const selected = famousPhrases.find((item) => item.id === selectedId) || famousPhrases[0];
+        state.selectedMnemonicId = selected.id;
+        return `<div class="tile"><h2>🎵 語呂あわせモード</h2><p>定番の並び語呂に加えて、族ごとの有名語呂もまとめました。左から選ぶと右に解説が出ます。語呂は流派差があるため、重なりのある覚え方もあえて載せています。</p></div><div class="mnemonic-layout"><div class="tile mnemonic-list">${famousPhrases.map((item) => `<button class="mnemonic-button ${item.id === selected.id ? 'active' : ''}" type="button" data-mnemonic-id="${item.id}"><div class="phrase-line">${item.phrase}</div><div class="meta-line">${item.title} ・ ${item.detail}</div></button>`).join('')}</div><div class="tile mnemonic-detail"><h3>${selected.title}</h3><p><strong>語呂:</strong> ${selected.phrase}</p><p><strong>対応する並び:</strong> ${selected.detail}</p><p><strong>どんな時に使う？</strong> ${selected.note}</p><p><strong>解説:</strong> ${selected.hint}</p><div class="mnemonic-tags"><span class="mnemonic-tag">${selected.overlap}</span><span class="mnemonic-tag">選択して覚える</span></div></div></div>`;
       }
       function renderProfileView(user) {
         const weak = getWeakElements(user).slice(0, 12);
         return `
           <div class="tile"><h2>📈 ${escapeHtml(user.name)} さんの学習きろく</h2><p>誤答が少しあるだけでは苦手Topに出にくいよう、出題数と誤答率の両方で判定しています。</p></div>
           <div class="summary-grid"><div class="small-tile"><div class="sub">プレイしたセット</div><div style="font-size:1.7rem;font-weight:900;">${user.stats.totalSets}</div></div><div class="small-tile"><div class="sub">総回答数</div><div style="font-size:1.7rem;font-weight:900;">${user.stats.totalAnswers}</div></div><div class="small-tile"><div class="sub">正答率</div><div style="font-size:1.7rem;font-weight:900;">${calcAccuracy(user.stats.totalCorrect, user.stats.totalAnswers)}%</div></div><div class="small-tile"><div class="sub">記号→名前</div><div style="font-size:1.7rem;font-weight:900;">${calcAccuracy(user.stats.modes.symbolToName.correct, user.stats.modes.symbolToName.answers)}%</div></div></div>
-          <div class="cards-grid scroll-area"><div class="tile"><h3>💡 苦手元素ランキング</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${item.symbol} / ${item.name}</strong><br /><span class="sub">出題 ${item.asked} 回 ・ 正解 ${item.correct} 回 ・ 誤答 ${item.wrong} 回 ・ 正答率 ${item.accuracy}% ・ ${item.levelLabel}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。</div>'}</div></div><div class="tile"><h3>🕘 最近のセット</h3><table><thead><tr><th>日時</th><th>モード</th><th>正答</th><th>率</th></tr></thead><tbody>${user.history.length ? user.history.map((entry) => `<tr><td>${formatDate(entry.playedAt)}</td><td>${entry.mode === 'symbolToName' ? '記号→名前' : '名前→記号'}</td><td>${entry.correct}/10</td><td>${entry.accuracy}%</td></tr>`).join('') : '<tr><td colspan="4">まだセット記録がありません。</td></tr>'}</tbody></table></div></div>`;
+          <div class="cards-grid scroll-area"><div class="tile"><h3>💡 苦手元素ランキング</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${escapeHtml(item.symbol)} / ${escapeHtml(item.name)}</strong><br /><span class="sub">出題 ${item.asked} 回 ・ 正解 ${item.correct} 回 ・ 誤答 ${item.wrong} 回 ・ 正答率 ${item.accuracy}% ・ ${escapeHtml(item.levelLabel)}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。</div>'}</div></div><div class="tile"><h3>🕘 最近のセット</h3><table><thead><tr><th>日時</th><th>モード</th><th>正答</th><th>率</th></tr></thead><tbody>${user.history.length ? user.history.map((entry) => `<tr><td>${formatDate(entry.playedAt)}</td><td>${entry.mode === 'symbolToName' ? '記号→名前' : '名前→記号'}</td><td>${entry.correct}/10</td><td>${entry.accuracy}%</td></tr>`).join('') : '<tr><td colspan="4">まだセット記録がありません。</td></tr>'}</tbody></table></div></div>`;
       }
       function renderGameScreen() {
         const user = getActiveUser();
         const game = state.game;
         const modeLabel = state.gameMode === 'symbolToName' ? '記号 → 元素名' : '元素名 → 記号';
         if (!game.running && !game.finished) {
-          refs.gameScreen.innerHTML = `<div class="game-screen"><div class="panel game-header"><div class="tile"><h2>🎯 ゲーム画面</h2><p>この画面はゲーム専用です。FullHD と iPad の両方で周期表全体が見やすいサイズに調整しています。</p><div class="mode-strip" style="margin-top:8px;"><button class="tile-button" data-start-mode="symbolToName" type="button">記号 → 元素名ではじめる</button><button class="ghost-button" data-start-mode="nameToSymbol" type="button">元素名 → 記号ではじめる</button></div></div><div class="tile"><h3>👤 プレイ中ユーザー</h3><p>${escapeHtml(user.name)} さん</p><div class="button-row" style="margin-top:8px;"><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div></div></div></div>`;
+          refs.gameScreen.innerHTML = `<div class="game-screen"><div class="panel game-header"><div class="tile"><h2>🌈 げんそきおくランド</h2><p>この画面はゲーム専用です。FullHD と iPad の両方で周期表全体が見やすいサイズに調整しています。</p><div class="mode-strip" style="margin-top:8px;"><button class="tile-button" data-start-mode="symbolToName" type="button">記号 → 元素名ではじめる</button><button class="ghost-button" data-start-mode="nameToSymbol" type="button">元素名 → 記号ではじめる</button></div></div><div class="tile"><h3>👤 プレイ中ユーザー</h3><p>${escapeHtml(user.name)} さん</p><div class="button-row" style="margin-top:8px;"><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div></div></div></div>`;
           bindGameEvents();
           return;
         }
@@ -580,7 +638,7 @@
           refs.gameScreen.innerHTML = `
             <div class="game-screen">
               <div class="panel game-header"><div class="tile"><h2>🏁 セット終了！</h2><p>${escapeHtml(user.name)} さんの今回の結果です。</p></div><div class="tile"><h3>🎉 まとめ</h3><p>モード: ${modeLabel}</p><p>正解: ${game.summary.correct} / ${QUESTIONS_PER_SET}</p><p>正答率: ${game.summary.accuracy}%</p><p>次にがんばる元素: ${game.summary.focus || 'なし'}</p></div></div>
-              <div class="panel scroll-area"><table><thead><tr><th>#</th><th>問題</th><th>選んだもの</th><th>正解</th><th>結果</th></tr></thead><tbody>${game.answers.map((answer, index) => `<tr><td>${index + 1}</td><td>${state.gameMode === 'symbolToName' ? `${answer.question.symbol} / ${answer.question.name}` : `${answer.question.name} / ${answer.question.symbol}`}</td><td>${answer.selected.symbol} / ${answer.selected.name}</td><td>${answer.question.symbol} / ${answer.question.name}</td><td>${answer.correct ? '⭕ 正解' : '❌ まちがい'}</td></tr>`).join('')}</tbody></table></div>
+              <div class="panel scroll-area"><table><thead><tr><th>#</th><th>問題</th><th>選んだもの</th><th>正解</th><th>結果</th></tr></thead><tbody>${game.answers.map((answer, index) => `<tr><td>${index + 1}</td><td><button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${state.gameMode === 'symbolToName' ? `${answer.question.symbol} / ${answer.question.name}` : `${answer.question.name} / ${answer.question.symbol}`}</button></td><td><button class="answer-link" type="button" data-open-element-modal="${answer.selected.symbol}">${answer.selected.symbol} / ${answer.selected.name}</button></td><td><button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${answer.question.symbol} / ${answer.question.name}</button></td><td>${answer.correct ? '⭕ 正解' : '❌ まちがい'}</td></tr>`).join('')}</tbody></table></div>
               <div class="panel button-row"><button id="retrySameMode" class="tile-button" type="button">もう1セット</button><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div>
             </div>`;
           bindGameEvents();
@@ -590,7 +648,7 @@
         const progressPercent = (game.currentIndex / QUESTIONS_PER_SET) * 100;
         refs.gameScreen.innerHTML = `
           <div class="game-screen">
-            <div class="panel game-topbar"><span class="title-chip">🎯 ゲーム画面</span><button id="backToManagementButton" class="ghost-button" type="button">← 管理</button><button class="pill ${state.gameMode === 'symbolToName' ? 'active' : ''}" data-mode-switch="symbolToName" type="button">記号→名前</button><button class="pill ${state.gameMode === 'nameToSymbol' ? 'active' : ''}" data-mode-switch="nameToSymbol" type="button">名前→記号</button><button id="restartGameButton" class="ghost-button" type="button">やり直し</button><span class="toolbar-spacer"></span><span class="user-chip">👤 ${escapeHtml(user.name)}</span></div>
+            <div class="panel game-topbar"><button id="backToManagementButton" class="ghost-button" type="button">← 管理</button><span class="title-chip">🌈げんそきおくランド</span><button class="pill ${state.gameMode === 'symbolToName' ? 'active' : ''}" data-mode-switch="symbolToName" type="button">記号→名前</button><button class="pill ${state.gameMode === 'nameToSymbol' ? 'active' : ''}" data-mode-switch="nameToSymbol" type="button">名前→記号</button><button id="restartGameButton" class="ghost-button" type="button">やり直し</button><span class="user-chip">${escapeHtml(user.name)}</span></div>
             <div class="game-layout">
               <div class="question-panel">
                 <div class="question-box"><div class="question-label">${modeLabel} ・ 第 ${game.currentIndex + 1} 問 / ${QUESTIONS_PER_SET}</div><div class="question-value">${state.gameMode === 'symbolToName' ? question.symbol : question.name}</div><div class="question-hint">${state.gameMode === 'symbolToName' ? '下の周期表から選ぼう！' : '下の周期表から選ぼう！'}</div></div>
@@ -606,6 +664,7 @@
         document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
         document.querySelectorAll('[data-start-mode]').forEach((button) => button.addEventListener('click', () => { state.gameMode = button.dataset.startMode; startNewGame(); state.currentScreen = 'game'; renderAll(); }));
         document.querySelectorAll('[data-open-element-modal]').forEach((button) => button.addEventListener('click', () => openElementModal(button.dataset.openElementModal)));
+        document.querySelectorAll('[data-mnemonic-id]').forEach((button) => button.addEventListener('click', () => { state.selectedMnemonicId = button.dataset.mnemonicId; renderAll(); }));
         const addButton = document.getElementById('addUserButton');
         const input = document.getElementById('newUserInput');
         addButton?.addEventListener('click', handleAddUser);
@@ -621,6 +680,7 @@
         document.getElementById('retrySameMode')?.addEventListener('click', () => { startNewGame(); renderAll(); });
         document.getElementById('backToManagementButton')?.addEventListener('click', () => { state.currentScreen = 'management'; renderAll(); });
         document.querySelectorAll('[data-select-symbol]').forEach((button) => button.addEventListener('click', () => answerQuestion(button.dataset.selectSymbol)));
+        document.querySelectorAll('[data-open-element-modal]').forEach((button) => button.addEventListener('click', () => openElementModal(button.dataset.openElementModal)));
       }
       function handleAddUser() {
         const input = document.getElementById('newUserInput');
