@@ -440,7 +440,7 @@
       ];
       const STORAGE_KEY = 'element-memory-land-v4';
       const STORAGE_META_KEY = 'element-memory-land-storage-meta';
-      const DEFAULT_USERS = ['あおい', 'ゆうた'];
+      const DEFAULT_USERS = ['いーくん', 'えっちゃん', 'たーくん', 'かっちゃん'];
       const QUESTIONS_PER_SET = 10;
       const ANSWER_SPLASH_MS = 900;
       const CATEGORY_LABELS = {
@@ -638,7 +638,7 @@
           refs.gameScreen.innerHTML = `
             <div class="game-screen">
               <div class="panel game-header"><div class="tile"><h2>🏁 セット終了！</h2><p>${escapeHtml(user.name)} さんの今回の結果です。</p></div><div class="tile"><h3>🎉 まとめ</h3><p>モード: ${modeLabel}</p><p>正解: ${game.summary.correct} / ${QUESTIONS_PER_SET}</p><p>正答率: ${game.summary.accuracy}%</p><p>次にがんばる元素: ${game.summary.focus || 'なし'}</p></div></div>
-              <div class="panel scroll-area"><table><thead><tr><th>#</th><th>問題</th><th>選んだもの</th><th>正解</th><th>結果</th></tr></thead><tbody>${game.answers.map((answer, index) => `<tr><td>${index + 1}</td><td><button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${state.gameMode === 'symbolToName' ? `${answer.question.symbol} / ${answer.question.name}` : `${answer.question.name} / ${answer.question.symbol}`}</button></td><td><button class="answer-link" type="button" data-open-element-modal="${answer.selected.symbol}">${answer.selected.symbol} / ${answer.selected.name}</button></td><td><button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${answer.question.symbol} / ${answer.question.name}</button></td><td>${answer.correct ? '⭕ 正解' : '❌ まちがい'}</td></tr>`).join('')}</tbody></table></div>
+              <div class="panel scroll-area"><table><thead><tr><th>#</th><th>出題</th><th>あなたの回答</th><th>結果</th></tr></thead><tbody>${game.answers.map((answer, index) => `<tr><td>${index + 1}</td><td><button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${state.gameMode === 'symbolToName' ? `${answer.question.symbol} / ${answer.question.name}` : `${answer.question.name} / ${answer.question.symbol}`}</button></td><td><button class="answer-link" type="button" data-open-element-modal="${answer.selected.symbol}">${answer.selected.symbol} / ${answer.selected.name}</button></td><td>${answer.correct ? '⭕ 正解' : `❌ 不正解<br /><span class="sub">正解: <button class="answer-link" type="button" data-open-element-modal="${answer.question.symbol}">${answer.question.symbol} / ${answer.question.name}</button></span>`}</td></tr>`).join('')}</tbody></table></div>
               <div class="panel button-row"><button id="retrySameMode" class="tile-button" type="button">もう1セット</button><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div>
             </div>`;
           bindGameEvents();
