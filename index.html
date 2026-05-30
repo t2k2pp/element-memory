@@ -112,16 +112,45 @@
       .empty-note { padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.8); color: var(--muted); }
       .game-screen { width: 100%; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
       .game-header { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 8px; align-items: stretch; }
-      .game-layout { display: grid; grid-template-rows: 20fr 80fr; gap: 6px; flex: 1; min-height: 0; }
-      .question-panel { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr); gap: 8px; min-height: 0; }
-      .question-box {
-        background: linear-gradient(135deg, rgba(107,124,255,0.16), rgba(255,155,113,0.18)); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; min-height: 104px;
+      .game-layout { display: grid; grid-template-rows: auto 1fr; gap: 6px; flex: 1; min-height: 0; }
+      .game-topbar {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 8px;
       }
-      .question-label { font-size: 0.82rem; color: var(--muted); }
-      .question-value { font-size: clamp(2.2rem, 4vw, 3.6rem); font-weight: 900; margin: 4px 0; line-height: 1.02; }
-      .question-hint { font-size: 0.95rem; line-height: 1.2; }
+      .game-topbar .title-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        border-radius: 999px;
+        background: linear-gradient(135deg, rgba(107,124,255,0.12), rgba(255,155,113,0.14));
+        font-weight: 800;
+        color: var(--text);
+      }
+      .game-topbar .toolbar-spacer { flex: 1; min-width: 8px; }
+      .game-topbar .user-chip {
+        display: inline-flex;
+        align-items: center;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(255,255,255,0.9);
+        border: 1px solid rgba(107,124,255,0.12);
+        color: var(--muted);
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+      .question-panel { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr); gap: 8px; min-height: 0; align-items: stretch; }
+      .question-box {
+        background: linear-gradient(135deg, rgba(107,124,255,0.16), rgba(255,155,113,0.18)); border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; min-height: 88px;
+      }
+      .question-label { font-size: 0.78rem; color: var(--muted); }
+      .question-value { font-size: clamp(1.8rem, 3.2vw, 3rem); font-weight: 900; margin: 2px 0; line-height: 1.02; }
+      .question-hint { font-size: 0.84rem; line-height: 1.15; }
       .status-box {
-        border-radius: 16px; padding: 12px; background: rgba(255,255,255,0.92); border: 1px solid rgba(107,124,255,0.12); display: flex; flex-direction: column; gap: 7px; justify-content: center;
+        border-radius: 16px; padding: 10px; background: rgba(255,255,255,0.92); border: 1px solid rgba(107,124,255,0.12); display: flex; flex-direction: column; gap: 5px; justify-content: center;
       }
       .big-status { font-size: 1rem; font-weight: 800; }
       .result-banner { padding: 8px 10px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; line-height: 1.25; }
@@ -194,10 +223,22 @@
       @media (max-width: 1180px) {
         body { overflow: auto; }
         .app-shell { width: calc(100vw - 10px); min-height: calc(100vh - 10px); height: auto; margin: 5px auto; padding: 6px; }
-        .management-layout, .game-header, .screen-intro, .question-panel, .table-layout { grid-template-columns: 1fr; }
+        .management-layout, .game-header, .screen-intro, .table-layout { grid-template-columns: 1fr; }
         .management-layout { gap: 8px; }
         .sidebar { grid-template-rows: auto auto auto; }
         .game-layout { grid-template-rows: auto auto; }
+        .game-topbar { padding: 5px 6px; gap: 5px; }
+        .game-topbar .title-chip { padding: 5px 8px; font-size: 0.82rem; }
+        .game-topbar .user-chip { padding: 4px 8px; font-size: 0.74rem; }
+        .question-panel { grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.9fr); gap: 6px; }
+        .question-box { min-height: 74px; padding: 8px 10px; }
+        .question-label { font-size: 0.72rem; }
+        .question-value { font-size: clamp(1.45rem, 3vw, 2.3rem); }
+        .question-hint { font-size: 0.76rem; }
+        .status-box { padding: 8px; gap: 4px; }
+        .big-status { font-size: 0.86rem; }
+        .result-banner { padding: 6px 8px; font-size: 0.76rem; line-height: 1.18; }
+        .sub { font-size: 0.72rem; line-height: 1.18; }
         .periodic-board { gap: 4px; }
         .periodic-cell, .periodic-blank { min-height: 54px; }
         .periodic-cell .symbol { font-size: 1.06rem; }
@@ -549,11 +590,11 @@
         const progressPercent = (game.currentIndex / QUESTIONS_PER_SET) * 100;
         refs.gameScreen.innerHTML = `
           <div class="game-screen">
-            <div class="panel toolbar" style="padding:4px 6px;gap:4px;align-items:center;"><button id="backToManagementButton" class="ghost-button" type="button">← 管理</button><button class="pill ${state.gameMode === 'symbolToName' ? 'active' : ''}" data-mode-switch="symbolToName" type="button">記号→名前</button><button class="pill ${state.gameMode === 'nameToSymbol' ? 'active' : ''}" data-mode-switch="nameToSymbol" type="button">名前→記号</button><button id="restartGameButton" class="ghost-button" type="button">やり直し</button><span class="sub">${escapeHtml(user.name)}</span></div>
+            <div class="panel game-topbar"><span class="title-chip">🎯 ゲーム画面</span><button id="backToManagementButton" class="ghost-button" type="button">← 管理</button><button class="pill ${state.gameMode === 'symbolToName' ? 'active' : ''}" data-mode-switch="symbolToName" type="button">記号→名前</button><button class="pill ${state.gameMode === 'nameToSymbol' ? 'active' : ''}" data-mode-switch="nameToSymbol" type="button">名前→記号</button><button id="restartGameButton" class="ghost-button" type="button">やり直し</button><span class="toolbar-spacer"></span><span class="user-chip">👤 ${escapeHtml(user.name)}</span></div>
             <div class="game-layout">
               <div class="question-panel">
-                <div class="question-box"><div class="question-label">${modeLabel} ・ 第 ${game.currentIndex + 1} 問 / ${QUESTIONS_PER_SET}</div><div class="question-value">${state.gameMode === 'symbolToName' ? question.symbol : question.name}</div><div class="question-hint">${state.gameMode === 'symbolToName' ? 'この記号の元素名を、下の周期表から選ぼう！' : 'この元素名の記号を、下の周期表から選ぼう！'}</div></div>
-                <div class="status-box"><div class="big-status">${escapeHtml(user.name)} さん、ファイト！</div><div class="sub">未出題や誤答寄りの元素が少し出やすくなります。</div><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div><div class="sub">${game.currentIndex}問完了 / あと ${QUESTIONS_PER_SET - game.currentIndex} 問</div>${game.lastFeedback ? `<div class="result-banner ${game.lastFeedback.correct ? 'good' : 'bad'}">${game.lastFeedback.correct ? `前回: 正解 (${game.lastFeedback.correctElement.symbol} / ${game.lastFeedback.correctElement.name})` : `前回: ${game.lastFeedback.selectedElement.symbol} / ${game.lastFeedback.selectedElement.name} → 正解は ${game.lastFeedback.correctElement.symbol} / ${game.lastFeedback.correctElement.name}`}</div>` : '<div class="sub">答えたいマスをクリックしてね。</div>'}</div>
+                <div class="question-box"><div class="question-label">${modeLabel} ・ 第 ${game.currentIndex + 1} 問 / ${QUESTIONS_PER_SET}</div><div class="question-value">${state.gameMode === 'symbolToName' ? question.symbol : question.name}</div><div class="question-hint">${state.gameMode === 'symbolToName' ? '下の周期表から選ぼう！' : '下の周期表から選ぼう！'}</div></div>
+                <div class="status-box"><div class="big-status">進みぐあい ${game.currentIndex}/${QUESTIONS_PER_SET}</div><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div><div class="sub">あと ${QUESTIONS_PER_SET - game.currentIndex} 問</div>${game.lastFeedback ? `<div class="result-banner ${game.lastFeedback.correct ? 'good' : 'bad'}">${game.lastFeedback.correct ? `前回 ○ ${game.lastFeedback.correctElement.symbol}/${game.lastFeedback.correctElement.name}` : `前回 × ${game.lastFeedback.selectedElement.symbol}/${game.lastFeedback.selectedElement.name} → ${game.lastFeedback.correctElement.symbol}/${game.lastFeedback.correctElement.name}`}</div>` : '<div class="sub">答えたいマスをクリックしてね。</div>'}</div>
               </div>
               <div class="panel board-panel"><div class="mini-legend">${Object.entries(CATEGORY_LABELS).map(([key, label]) => `<span class="legend-item"><span class="legend-dot" style="background:${CATEGORY_COLORS[key]}"></span>${label}</span>`).join('')}</div><div class="sub">${state.gameMode === 'symbolToName' ? 'ゲーム中は元素記号を隠し、元素名中心で選べます。' : 'ゲーム中は元素名を隠し、元素記号中心で選べます。'} ${game.locked ? 'いまは判定表示中です。' : ''}</div><div class="periodic-board">${renderPeriodicBoard({ mode: state.gameMode, gameMode: true, currentQuestion: question, feedback: game.lastFeedback, interactive: false, locked: game.locked })}</div></div>
             </div>
