@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>げんそきおくランド</title>
+    <style>
+      :root {
+        --bg1: #fff7ef;
+        --bg2: #f7fbff;
+        --card: rgba(255, 255, 255, 0.94);
+        --primary: #6b7cff;
+        --primary-strong: #4658ea;
+        --accent: #ff9b71;
+        --text: #24405a;
+        --muted: #68829b;
+        --shadow: 0 14px 34px rgba(98, 115, 193, 0.14);
+        --good: #3bb273;
+        --bad: #ef6f6c;
+      }
+      * { box-sizing: border-box; }
+      html, body { height: 100%; }
+      body {
+        margin: 0;
+        overflow: hidden;
+        font-family: "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+        color: var(--text);
+        background:
+          radial-gradient(circle at top left, #fff1a9 0, transparent 25%),
+          radial-gradient(circle at top right, #ffd5c2 0, transparent 20%),
+          linear-gradient(180deg, var(--bg1), var(--bg2));
+      }
+      button, input, select { font: inherit; }
+      button { border: none; cursor: pointer; }
+      .app-shell {
+        width: min(1910px, calc(100vw - 12px));
+        height: min(100vh - 12px, 1040px);
+        margin: 6px auto;
+        padding: 8px;
+        border-radius: 22px;
+        background: rgba(255, 255, 255, 0.32);
+        box-shadow: 0 18px 36px rgba(73, 98, 190, 0.15);
+        backdrop-filter: blur(8px);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .hero {
+        min-height: 54px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 10px;
+        padding: 8px 12px;
+        border-radius: 16px;
+        background: var(--card);
+        box-shadow: var(--shadow);
+      }
+      .hero h1 { margin: 0; font-size: clamp(1.2rem, 1.6vw, 1.8rem); line-height: 1.1; }
+      .hero p { margin: 2px 0 0; color: var(--muted); font-size: 0.78rem; line-height: 1.2; }
+      .sparkles { font-size: 1.25rem; white-space: nowrap; }
+      .screen { display: none; min-height: 0; flex: 1; }
+      .screen.active { display: flex; }
+      .panel {
+        background: var(--card);
+        border-radius: 16px;
+        box-shadow: var(--shadow);
+        padding: 8px;
+        border: 1px solid rgba(255, 255, 255, 0.72);
+        min-height: 0;
+      }
+      .section-title { margin: 0; font-size: 0.95rem; line-height: 1.1; }
+      .sub { color: var(--muted); font-size: 0.76rem; line-height: 1.25; }
+      .management-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 10px; width: 100%; min-height: 0; }
+      .sidebar { display: grid; grid-template-rows: auto auto 1fr; gap: 10px; min-height: 0; }
+      .user-card, .nav-card, .stats-card { display: flex; flex-direction: column; gap: 8px; }
+      .user-list { display: flex; flex-direction: column; gap: 6px; overflow: auto; max-height: 220px; padding-right: 2px; }
+      .user-item, .nav-button, .control-button, .pill, .tile-button, .danger-button, .ghost-button { border-radius: 14px; transition: transform 0.18s ease, box-shadow 0.18s ease, background 0.18s ease; }
+      .user-item, .nav-button, .ghost-button, .control-button {
+        text-align: left; padding: 8px 10px; background: rgba(255,255,255,0.84); border: 1px solid rgba(107,124,255,0.14); color: var(--text);
+      }
+      .user-item.active, .nav-button.active, .pill.active, .control-button.primary, .tile-button {
+        background: linear-gradient(135deg, rgba(107,124,255,0.96), rgba(70,88,234,0.98)); color: white; box-shadow: 0 10px 24px rgba(70,88,234,0.24);
+      }
+      .danger-button { padding: 8px 10px; background: linear-gradient(135deg, rgba(239,111,108,0.95), rgba(223,80,90,0.98)); color: white; box-shadow: 0 10px 24px rgba(239,111,108,0.22); }
+      .user-item:hover, .nav-button:hover, .control-button:hover, .pill:hover, .tile-button:hover, .danger-button:hover, .ghost-button:hover { transform: translateY(-1px); }
+      .add-user, .button-row, .toolbar, .top-actions, .mode-strip, .danger-row { display: flex; flex-wrap: wrap; gap: 6px; }
+      .add-user input { flex: 1; min-width: 0; border-radius: 12px; border: 1px solid rgba(107,124,255,0.24); padding: 8px 10px; background: rgba(255,255,255,0.96); }
+      .control-button, .pill, .tile-button, .ghost-button { padding: 8px 12px; font-weight: 700; }
+      .pill { background: rgba(255,255,255,0.82); border: 1px solid rgba(107,124,255,0.14); color: var(--text); }
+      .summary-grid, .cards-grid, .mode-grid, .memorize-grid { display: grid; gap: 10px; }
+      .summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .cards-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .mode-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .memorize-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: auto; padding-right: 4px; }
+      .tile, .small-tile {
+        padding: 10px; border-radius: 16px; background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(243,246,255,0.92)); border: 1px solid rgba(107,124,255,0.12); box-shadow: var(--shadow);
+      }
+      .tile h2, .tile h3, .tile h4, .small-tile h3 { margin: 0 0 6px; }
+      .tile p, .tile li, .small-tile p { margin: 0; color: var(--muted); line-height: 1.35; }
+      .management-main { display: flex; flex-direction: column; gap: 10px; min-height: 0; }
+      .view { display: none; min-height: 0; flex: 1; }
+      .view.active { display: flex; flex-direction: column; gap: 10px; }
+      .scroll-area { overflow: auto; min-height: 0; padding-right: 4px; }
+      .mini-legend { display: flex; flex-wrap: wrap; gap: 5px; }
+      .legend-item { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border-radius: 999px; background: rgba(255,255,255,0.84); color: var(--muted); font-size: 0.72rem; }
+      .legend-dot { width: 8px; height: 8px; border-radius: 999px; display: inline-block; }
+      table { width: 100%; border-collapse: collapse; }
+      th, td { padding: 7px 8px; border-bottom: 1px solid rgba(107,124,255,0.12); text-align: left; vertical-align: top; font-size: 0.84rem; }
+      .weak-list { display: grid; gap: 6px; }
+      .weak-item { padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,0.82); border: 1px solid rgba(107,124,255,0.12); }
+      .empty-note { padding: 12px; border-radius: 14px; background: rgba(255,255,255,0.8); color: var(--muted); }
+      .game-screen { width: 100%; min-height: 0; display: flex; flex-direction: column; gap: 6px; }
+      .game-header { display: grid; grid-template-columns: 1.2fr 0.8fr; gap: 8px; align-items: stretch; }
+      .game-layout { display: grid; grid-template-rows: 20fr 80fr; gap: 6px; flex: 1; min-height: 0; }
+      .question-panel { display: grid; grid-template-columns: minmax(0, 1.6fr) minmax(280px, 0.9fr); gap: 8px; min-height: 0; }
+      .question-box {
+        background: linear-gradient(135deg, rgba(107,124,255,0.16), rgba(255,155,113,0.18)); border-radius: 16px; padding: 12px 14px; display: flex; flex-direction: column; justify-content: center; min-height: 104px;
+      }
+      .question-label { font-size: 0.82rem; color: var(--muted); }
+      .question-value { font-size: clamp(2.2rem, 4vw, 3.6rem); font-weight: 900; margin: 4px 0; line-height: 1.02; }
+      .question-hint { font-size: 0.95rem; line-height: 1.2; }
+      .status-box {
+        border-radius: 16px; padding: 12px; background: rgba(255,255,255,0.92); border: 1px solid rgba(107,124,255,0.12); display: flex; flex-direction: column; gap: 7px; justify-content: center;
+      }
+      .big-status { font-size: 1rem; font-weight: 800; }
+      .result-banner { padding: 8px 10px; border-radius: 12px; font-weight: 800; font-size: 0.9rem; line-height: 1.25; }
+      .result-banner.good { background: rgba(59,178,115,0.16); color: #1d7c49; }
+      .result-banner.bad { background: rgba(239,111,108,0.16); color: #b84c49; }
+      .progress-bar { width: 100%; height: 8px; border-radius: 999px; background: rgba(107,124,255,0.12); overflow: hidden; }
+      .progress-fill { height: 100%; border-radius: 999px; background: linear-gradient(135deg, var(--accent), var(--primary)); }
+      .board-panel { display: flex; flex-direction: column; gap: 4px; min-height: 0; overflow: hidden; }
+      .periodic-board { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 3px; align-content: start; }
+      .periodic-cell, .periodic-blank { min-height: 42px; border-radius: 9px; }
+      .periodic-blank { background: transparent; }
+      .periodic-cell {
+        position: relative; padding: 3px 4px; border: 1px solid rgba(107,124,255,0.14); background: rgba(255,255,255,0.92); text-align: left; box-shadow: 0 4px 10px rgba(127,149,215,0.08); overflow: hidden;
+      }
+      .periodic-cell .topline { display: flex; align-items: flex-start; justify-content: space-between; gap: 2px; }
+      .periodic-cell .number { font-size: 0.48rem; color: var(--muted); line-height: 1; min-width: 1.2em; }
+      .periodic-cell .symbol { display: block; font-size: 0.92rem; font-weight: 900; line-height: 0.95; flex: 1; text-align: left; }
+      .periodic-cell .name { font-size: 0.48rem; line-height: 1.05; margin-top: 1px; }
+      .periodic-cell .weight { font-size: 0.42rem; color: var(--muted); margin-top: 1px; line-height: 1; }
+      .periodic-cell.alkali { background: linear-gradient(180deg, #fff2cc, #fff8e7); }
+      .periodic-cell.alkaline { background: linear-gradient(180deg, #ffefd9, #fff7ee); }
+      .periodic-cell.transition { background: linear-gradient(180deg, #dff4ff, #effaff); }
+      .periodic-cell.post-transition { background: linear-gradient(180deg, #f0f3ff, #fafbff); }
+      .periodic-cell.metalloid { background: linear-gradient(180deg, #dcf8ea, #effcf5); }
+      .periodic-cell.nonmetal { background: linear-gradient(180deg, #e8f0ff, #f4f7ff); }
+      .periodic-cell.halogen { background: linear-gradient(180deg, #ffe4f1, #fff3f8); }
+      .periodic-cell.noble { background: linear-gradient(180deg, #efe4ff, #f8f3ff); }
+      .periodic-cell.lanthanide { background: linear-gradient(180deg, #ffe9d6, #fff6ee); }
+      .periodic-cell.actinide { background: linear-gradient(180deg, #ffdedd, #fff1f1); }
+      .periodic-cell.selectable:hover, .periodic-cell.info:hover { box-shadow: 0 8px 18px rgba(107,124,255,0.18); }
+      .periodic-cell.correct { outline: 3px solid rgba(59,178,115,0.74); }
+      .periodic-cell.wrong { outline: 3px solid rgba(239,111,108,0.72); }
+      .periodic-cell.focus { transform: scale(1.01); }
+      .table-board { overflow: auto; padding-right: 2px; }
+      .table-board .periodic-board { gap: 2px; }
+      .table-board .periodic-cell, .table-board .periodic-blank { min-height: 38px; }
+      .table-board .periodic-cell { padding: 2px 3px; }
+      .table-board .periodic-cell .number { font-size: 0.44rem; }
+      .table-board .periodic-cell .symbol { font-size: 0.86rem; }
+      .table-board .periodic-cell .name, .table-board .periodic-cell .weight { font-size: 0.4rem; }
+      .table-layout { display: flex; flex-direction: column; gap: 10px; min-height: 0; flex: 1; }
+      .table-help { padding: 8px 10px; border-radius: 14px; background: rgba(255,255,255,0.86); border: 1px solid rgba(107,124,255,0.12); }
+      .detail-big { display: grid; grid-template-columns: 88px 1fr; gap: 10px; align-items: center; }
+      .big-symbol { display: flex; align-items: center; justify-content: center; height: 88px; border-radius: 20px; font-size: 2rem; font-weight: 900; color: var(--text); border: 2px solid rgba(107,124,255,0.14); }
+      .topic-list { display: grid; gap: 6px; }
+      .topic-item { padding: 8px 10px; border-radius: 12px; background: rgba(255,255,255,0.82); border: 1px solid rgba(107,124,255,0.12); }
+      .screen-intro { display: grid; grid-template-columns: 1.2fr 1fr; gap: 10px; }
+      .modal-backdrop, .answer-splash {
+        position: fixed; inset: 0; display: none; align-items: center; justify-content: center; padding: 16px; z-index: 30;
+      }
+      .modal-backdrop { background: rgba(36,64,90,0.34); }
+      .answer-splash { background: rgba(36,64,90,0.28); z-index: 40; }
+      .modal-backdrop.open, .answer-splash.open { display: flex; }
+      .modal { width: min(720px, calc(100vw - 24px)); max-height: min(82vh, 920px); overflow: auto; border-radius: 20px; background: rgba(255,255,255,0.98); box-shadow: 0 24px 60px rgba(36,64,90,0.25); padding: 14px; }
+      .modal-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; }
+      .splash-card {
+        width: min(540px, calc(100vw - 32px)); border-radius: 24px; padding: 20px; background: rgba(255,255,255,0.98); box-shadow: 0 24px 60px rgba(36,64,90,0.25); text-align: center;
+      }
+      .splash-card.good { border: 3px solid rgba(59,178,115,0.35); }
+      .splash-card.bad { border: 3px solid rgba(239,111,108,0.35); }
+      .splash-emoji { font-size: 3.2rem; line-height: 1; }
+      .splash-title { font-size: 1.6rem; font-weight: 900; margin-top: 8px; }
+      .splash-answer { margin-top: 8px; font-size: 1rem; line-height: 1.5; color: var(--text); }
+      .splash-note { margin-top: 10px; color: var(--muted); font-size: 0.85rem; }
+      @media (max-width: 1366px) {
+        body { overflow: auto; }
+        .app-shell { height: auto; min-height: calc(100vh - 12px); }
+        .management-layout { grid-template-columns: 250px minmax(0,1fr); }
+      }
+      @media (max-width: 1180px) {
+        body { overflow: auto; }
+        .app-shell { width: calc(100vw - 10px); min-height: calc(100vh - 10px); height: auto; margin: 5px auto; padding: 6px; }
+        .management-layout, .game-header, .screen-intro, .question-panel, .table-layout { grid-template-columns: 1fr; }
+        .management-layout { gap: 8px; }
+        .sidebar { grid-template-rows: auto auto auto; }
+        .game-layout { grid-template-rows: auto auto; }
+        .periodic-board { gap: 4px; }
+        .periodic-cell, .periodic-blank { min-height: 54px; }
+        .periodic-cell .symbol { font-size: 1.06rem; }
+        .periodic-cell .name { font-size: 0.62rem; }
+        .periodic-cell .weight { font-size: 0.5rem; }
+        .table-board .periodic-cell, .table-board .periodic-blank { min-height: 52px; }
+        .table-board .periodic-cell .symbol { font-size: 0.98rem; }
+        .table-board .periodic-cell .name, .table-board .periodic-cell .weight { font-size: 0.54rem; }
+      }
+      @media (max-width: 820px) {
+        body { overflow: auto; }
+        .app-shell { width: calc(100vw - 8px); margin: 4px auto; }
+        .summary-grid, .cards-grid, .mode-grid, .memorize-grid { grid-template-columns: 1fr; }
+        .periodic-board { grid-template-columns: repeat(9, minmax(0, 1fr)); }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="hero">
+        <div>
+          <h1>🌈 げんそきおくランド</h1>
+          <p>遊んで覚える元素記号トレーニング。FullHD と iPad の両方で使いやすい表示に調整しています。</p>
+        </div>
+        <div class="sparkles">🧪✨🔬🎈</div>
+      </header>
+      <section id="screen-management" class="screen active"></section>
+      <section id="screen-game" class="screen"></section>
+    </div>
+    <div id="elementModalBackdrop" class="modal-backdrop"><div id="elementModal" class="modal"></div></div>
+    <div id="answerSplash" class="answer-splash"></div>
+    <script>
+      const ELEMENTS = [
+        { number: 1, symbol: 'H', name: '水素', latin: 'Hydrogen', group: 1, period: 1, category: 'nonmetal', weight: '1.008', mnemonic: '水兵', topics: ['宇宙で最も多い元素で、恒星のエネルギー源。', '燃料電池やロケット燃料で注目される。', 'とても軽く、未来のエネルギーとして研究が進む。'] },
+        { number: 2, symbol: 'He', name: 'ヘリウム', latin: 'Helium', group: 18, period: 1, category: 'noble', weight: '4.003', mnemonic: '兵', topics: ['太陽のスペクトル観測から見つかったため、太陽神ヘリオスに由来。', '風船を浮かせる気体として有名。', 'MRI の超伝導磁石を冷やすのに重要。'] },
+        { number: 3, symbol: 'Li', name: 'リチウム', latin: 'Lithium', group: 1, period: 2, category: 'alkali', weight: '6.94', mnemonic: 'リー', topics: ['ギリシャ語の「石 lithos」が語源。', 'リチウムイオン電池でスマホやEVに大活躍。', '資源確保や電池リサイクルが近年の話題。'] },
+        { number: 4, symbol: 'Be', name: 'ベリリウム', latin: 'Beryllium', group: 2, period: 2, category: 'alkaline', weight: '9.012', mnemonic: 'ベ', topics: ['宝石ベリルに由来して名付けられた。', '軽くて硬く、航空宇宙分野で使われる。', 'X線を通しやすい特性があり、特殊機器にも利用される。'] },
+        { number: 5, symbol: 'B', name: 'ホウ素', latin: 'Boron', group: 13, period: 2, category: 'metalloid', weight: '10.81', mnemonic: 'ぼ', topics: ['ホウ砂 borax の名に由来。', '耐熱ガラスや半導体材料に使われる。', 'ホウ素中性子捕捉療法というがん治療でも注目される。'] },
+        { number: 6, symbol: 'C', name: '炭素', latin: 'Carbon', group: 14, period: 2, category: 'nonmetal', weight: '12.01', mnemonic: 'く', topics: ['ラテン語 carbo（木炭）が語源。', 'ダイヤモンドも黒鉛も同じ炭素。', '二酸化炭素やカーボンニュートラルで毎日のように耳にする。'] },
+        { number: 7, symbol: 'N', name: '窒素', latin: 'Nitrogen', group: 15, period: 2, category: 'nonmetal', weight: '14.01', mnemonic: 'の', topics: ['空気の約8割を占める。', '液体窒素は実験や食品の急速冷却に使われる。', '肥料の材料として世界の食料生産を支える元素。'] },
+        { number: 8, symbol: 'O', name: '酸素', latin: 'Oxygen', group: 16, period: 2, category: 'nonmetal', weight: '16.00', mnemonic: '船', topics: ['ギリシャ語で「酸を生むもの」という意味から命名された。', '呼吸に必要な身近な元素。', '医療や製鉄、宇宙探査でも重要。'] },
+        { number: 9, symbol: 'F', name: 'フッ素', latin: 'Fluorine', group: 17, period: 2, category: 'halogen', weight: '19.00', mnemonic: 'ふ', topics: ['鉱石の蛍石 fluorite に由来。', '歯みがきのフッ素でよく知られる。', 'フッ素樹脂やPFAS問題など、便利さと環境課題の両方で注目。'] },
+        { number: 10, symbol: 'Ne', name: 'ネオン', latin: 'Neon', group: 18, period: 2, category: 'noble', weight: '20.18', mnemonic: 'ね', topics: ['ギリシャ語で「新しい」が語源。', 'ネオンサインの鮮やかな光で有名。', '半導体レーザーや精密加工にも使われる。'] },
+        { number: 11, symbol: 'Na', name: 'ナトリウム', latin: 'Sodium', group: 1, period: 3, category: 'alkali', weight: '22.99', mnemonic: 'な', topics: ['記号 Na はラテン語 natrium に由来。', '食塩の成分として身近。', '次世代のナトリウムイオン電池も注目されている。'] },
+        { number: 12, symbol: 'Mg', name: 'マグネシウム', latin: 'Magnesium', group: 2, period: 3, category: 'alkaline', weight: '24.31', mnemonic: 'ま', topics: ['ギリシャの地名マグネシアに由来。', '軽量金属として自動車やPC部品に使われる。', '花火の明るい光にも使われる。'] },
+        { number: 13, symbol: 'Al', name: 'アルミニウム', latin: 'Aluminium', group: 13, period: 3, category: 'post-transition', weight: '26.98', mnemonic: 'が', topics: ['ミョウバン alumen に由来。', 'アルミホイルや缶としてとても身近。', '軽くてさびにくく、飛行機にも欠かせない。'] },
+        { number: 14, symbol: 'Si', name: 'ケイ素', latin: 'Silicon', group: 14, period: 3, category: 'metalloid', weight: '28.09', mnemonic: 'シ', topics: ['ラテン語 silex（火打石）が語源。', '半導体チップの主役。', '太陽電池やAI時代の半導体需要でさらに注目。'] },
+        { number: 15, symbol: 'P', name: 'リン', latin: 'Phosphorus', group: 15, period: 3, category: 'nonmetal', weight: '30.97', mnemonic: 'ッ', topics: ['ギリシャ語で「光を運ぶもの」が語源。', '肥料やマッチの材料として知られる。', 'DNA や ATP に含まれ、生き物にも欠かせない。'] },
+        { number: 16, symbol: 'S', name: '硫黄', latin: 'Sulfur', group: 16, period: 3, category: 'nonmetal', weight: '32.06', mnemonic: 'プ', topics: ['温泉のにおいで有名。', '硫酸の原料として工業で超重要。', '火山や地球環境の学習でもよく出てくる。'] },
+        { number: 17, symbol: 'Cl', name: '塩素', latin: 'Chlorine', group: 17, period: 3, category: 'halogen', weight: '35.45', mnemonic: 'ス', topics: ['黄緑色を意味するギリシャ語に由来。', 'プールの消毒や水道水の殺菌で活躍。', '塩化ビニルなど多くの化学製品の原料。'] },
+        { number: 18, symbol: 'Ar', name: 'アルゴン', latin: 'Argon', group: 18, period: 3, category: 'noble', weight: '39.95', mnemonic: 'ク', topics: ['ギリシャ語で「なまけもの」が語源で、反応しにくさを表す。', '電球や溶接の保護ガスに使われる。', '空気中にちゃんと存在する身近な希ガス。'] },
+        { number: 19, symbol: 'K', name: 'カリウム', latin: 'Potassium', group: 1, period: 4, category: 'alkali', weight: '39.10', mnemonic: 'ラ', topics: ['記号 K はラテン語 kalium に由来。', 'バナナの栄養素としてよく知られる。', '肥料や体内の神経・筋肉の働きで重要。'] },
+        { number: 20, symbol: 'Ca', name: 'カルシウム', latin: 'Calcium', group: 2, period: 4, category: 'alkaline', weight: '40.08', mnemonic: 'ー', topics: ['ラテン語 calx（石灰）が語源。', '骨や歯をつくる元素として有名。', 'セメントやチョークにも使われる。'] },
+        { number: 21, symbol: 'Sc', name: 'スカンジウム', latin: 'Scandium', group: 3, period: 4, category: 'transition', weight: '44.96', mnemonic: 'す', topics: ['スカンジナビア地方に由来する名前。', 'スポーツ用品や航空機用合金に使われる。', 'レアメタルとして知られる。'] },
+        { number: 22, symbol: 'Ti', name: 'チタン', latin: 'Titanium', group: 4, period: 4, category: 'transition', weight: '47.87', mnemonic: 'ち', topics: ['ギリシャ神話の巨人タイタンに由来。', '軽くて強く、人工関節や航空機にも使われる。', 'さびにくいので人気の金属。'] },
+        { number: 23, symbol: 'V', name: 'バナジウム', latin: 'Vanadium', group: 5, period: 4, category: 'transition', weight: '50.94', mnemonic: 'ま', topics: ['北欧神話の女神ヴァナディスに由来。', '強い鋼を作る添加元素。', '大型蓄電用のバナジウム電池でも期待される。'] },
+        { number: 24, symbol: 'Cr', name: 'クロム', latin: 'Chromium', group: 6, period: 4, category: 'transition', weight: '52.00', mnemonic: 'ん', topics: ['ギリシャ語で「色」を意味する chroma に由来。', 'ステンレス鋼に欠かせない。', 'メッキでぴかぴかに仕上げる用途でも有名。'] },
+        { number: 25, symbol: 'Mn', name: 'マンガン', latin: 'Manganese', group: 7, period: 4, category: 'transition', weight: '54.94', mnemonic: 'ふぇ', topics: ['乾電池の材料として有名。', '鉄を強くする材料としても重要。', '電池材料の需要増で再び注目される。'] },
+        { number: 26, symbol: 'Fe', name: '鉄', latin: 'Iron', group: 8, period: 4, category: 'transition', weight: '55.85', mnemonic: 'こ', topics: ['記号 Fe はラテン語 ferrum に由来。', '建物・橋・車に欠かせない代表的金属。', '脱炭素製鉄が近年の大きな話題。'] },
+        { number: 27, symbol: 'Co', name: 'コバルト', latin: 'Cobalt', group: 9, period: 4, category: 'transition', weight: '58.93', mnemonic: 'に', topics: ['ドイツ語の「妖精 kobold」が語源。', 'リチウムイオン電池の材料として重要。', '青い顔料コバルトブルーでも有名。'] },
+        { number: 28, symbol: 'Ni', name: 'ニッケル', latin: 'Nickel', group: 10, period: 4, category: 'transition', weight: '58.69', mnemonic: 'ど', topics: ['ドイツ語で「いたずら者の銅」が語源。', '硬貨やステンレスに使われる。', 'EV電池材料として重要性が増している。'] },
+        { number: 29, symbol: 'Cu', name: '銅', latin: 'Copper', group: 11, period: 4, category: 'transition', weight: '63.55', mnemonic: 'う', topics: ['記号 Cu はラテン語 cuprum に由来。', '電線や電子機器に必須。', '再エネやEVが増えるほど重要になる金属。'] },
+        { number: 30, symbol: 'Zn', name: '亜鉛', latin: 'Zinc', group: 12, period: 4, category: 'transition', weight: '65.38', mnemonic: 'あ', topics: ['鉄をさびから守るめっきに使われる。', '体に必要なミネラルとしても有名。', '乾電池などでも昔から活躍。'] },
+        { number: 31, symbol: 'Ga', name: 'ガリウム', latin: 'Gallium', group: 13, period: 4, category: 'post-transition', weight: '69.72', mnemonic: 'が', topics: ['フランスを意味するラテン語 Gallia に由来。', 'GaN や GaAs など半導体材料として大活躍。', '急速充電や高出力デバイスで注目。'] },
+        { number: 32, symbol: 'Ge', name: 'ゲルマニウム', latin: 'Germanium', group: 14, period: 4, category: 'metalloid', weight: '72.63', mnemonic: 'げ', topics: ['ドイツ Germania に由来。', '半導体や光ファイバー関連で使われる。', '赤外線レンズ材料としても重要。'] },
+        { number: 33, symbol: 'As', name: 'ヒ素', latin: 'Arsenic', group: 15, period: 4, category: 'metalloid', weight: '74.92', mnemonic: 'あっ', topics: ['有毒な元素として有名。', '一方で GaAs 半導体では重要な材料。', '環境や安全管理の話題でよく登場する。'] },
+        { number: 34, symbol: 'Se', name: 'セレン', latin: 'Selenium', group: 16, period: 4, category: 'nonmetal', weight: '78.97', mnemonic: 'せ', topics: ['月の女神セレーネに由来。', '太陽電池やガラスに使われる。', '体に必要な微量元素としても知られる。'] },
+        { number: 35, symbol: 'Br', name: '臭素', latin: 'Bromine', group: 17, period: 4, category: 'halogen', weight: '79.90', mnemonic: 'ぶ', topics: ['強いにおいを意味するギリシャ語が語源。', '液体の非金属として有名。', '難燃剤や化学工業の原料として利用される。'] },
+        { number: 36, symbol: 'Kr', name: 'クリプトン', latin: 'Krypton', group: 18, period: 4, category: 'noble', weight: '83.80', mnemonic: 'くり', topics: ['ギリシャ語で「隠れたもの」が語源。', '高性能照明やレーザーに使われる。', '希ガスの仲間で反応しにくい。'] },
+        { number: 37, symbol: 'Rb', name: 'ルビジウム', latin: 'Rubidium', group: 1, period: 5, category: 'alkali', weight: '85.47', mnemonic: '', topics: ['スペクトルの赤色にちなんで命名された。', '原子時計や研究用機器で利用される。', '反応性が高いアルカリ金属の仲間。'] },
+        { number: 38, symbol: 'Sr', name: 'ストロンチウム', latin: 'Strontium', group: 2, period: 5, category: 'alkaline', weight: '87.62', mnemonic: '', topics: ['スコットランドの地名ストロンシアンに由来。', '花火の赤色を出す材料として有名。', 'テレビのブラウン管材料としても使われてきた。'] },
+        { number: 39, symbol: 'Y', name: 'イットリウム', latin: 'Yttrium', group: 3, period: 5, category: 'transition', weight: '88.91', mnemonic: '', topics: ['スウェーデンの村イッテルビーに由来。', 'LED やレーザー、超伝導材料に使われる。', 'レアアース関連で名前を見ることがある。'] },
+        { number: 40, symbol: 'Zr', name: 'ジルコニウム', latin: 'Zirconium', group: 4, period: 5, category: 'transition', weight: '91.22', mnemonic: '', topics: ['鉱物ジルコンに由来。', '原子炉材料や人工歯に使われる。', '白く美しい酸化ジルコニウムも有名。'] },
+        { number: 41, symbol: 'Nb', name: 'ニオブ', latin: 'Niobium', group: 5, period: 5, category: 'transition', weight: '92.91', mnemonic: '', topics: ['ギリシャ神話のニオベーに由来。', '高強度鋼や超伝導材料に使われる。', '橋やパイプラインの鋼材改良にも役立つ。'] },
+        { number: 42, symbol: 'Mo', name: 'モリブデン', latin: 'Molybdenum', group: 6, period: 5, category: 'transition', weight: '95.95', mnemonic: '', topics: ['鉛と見間違えられた鉱石名が語源。', '高温に強い鋼をつくる添加元素。', '触媒や潤滑材料でも活躍する。'] },
+        { number: 43, symbol: 'Tc', name: 'テクネチウム', latin: 'Technetium', group: 7, period: 5, category: 'transition', weight: '[98]', mnemonic: '', topics: ['人工的に作られた最初の元素で、名は「人工の」を意味する。', '医療用の放射性同位体として極めて重要。', '原子番号43に安定同位体がないことでも有名。'] },
+        { number: 44, symbol: 'Ru', name: 'ルテニウム', latin: 'Ruthenium', group: 8, period: 5, category: 'transition', weight: '101.07', mnemonic: '', topics: ['ラテン語のロシア名 Ruthenia に由来。', '電気接点や触媒に使われる。', 'ハードディスク材料など電子分野でも利用された。'] },
+        { number: 45, symbol: 'Rh', name: 'ロジウム', latin: 'Rhodium', group: 9, period: 5, category: 'transition', weight: '102.91', mnemonic: '', topics: ['バラ色を意味するギリシャ語が語源。', '自動車の排ガス浄化触媒として重要。', 'とても高価な貴金属としてニュースになる。'] },
+        { number: 46, symbol: 'Pd', name: 'パラジウム', latin: 'Palladium', group: 10, period: 5, category: 'transition', weight: '106.42', mnemonic: '', topics: ['小惑星パラスに由来。', '自動車触媒や水素吸蔵材料に使われる。', '白金族金属の一つとして高価。'] },
+        { number: 47, symbol: 'Ag', name: '銀', latin: 'Silver', group: 11, period: 5, category: 'transition', weight: '107.87', mnemonic: '', topics: ['記号 Ag はラテン語 argentum に由来。', '電気を最もよく通す金属。', '装飾品や抗菌材料としてもよく使われる。'] },
+        { number: 48, symbol: 'Cd', name: 'カドミウム', latin: 'Cadmium', group: 12, period: 5, category: 'transition', weight: '112.41', mnemonic: '', topics: ['鉱石カラミンに由来する。', 'ニッケル・カドミウム電池で知られる。', '環境汚染や公害の歴史でも重要な元素。'] },
+        { number: 49, symbol: 'In', name: 'インジウム', latin: 'Indium', group: 13, period: 5, category: 'post-transition', weight: '114.82', mnemonic: '', topics: ['藍色 indigo のスペクトル線に由来。', '液晶パネルの ITO 電極で重要。', 'タッチパネルやディスプレイ産業で欠かせない。'] },
+        { number: 50, symbol: 'Sn', name: 'スズ', latin: 'Tin', group: 14, period: 5, category: 'post-transition', weight: '118.71', mnemonic: '', topics: ['ブリキやはんだの材料として有名。', 'さびにくく、めっきにも使われる。', '昔から生活用品に広く利用されてきた。'] },
+        { number: 51, symbol: 'Sb', name: 'アンチモン', latin: 'Antimony', group: 15, period: 5, category: 'metalloid', weight: '121.76', mnemonic: '', topics: ['記号 Sb はラテン語 stibium に由来。', '難燃剤や合金材料に使われる。', '半導体分野でも利用されることがある。'] },
+        { number: 52, symbol: 'Te', name: 'テルル', latin: 'Tellurium', group: 16, period: 5, category: 'metalloid', weight: '127.60', mnemonic: '', topics: ['ラテン語 tellūs（地球）が語源。', '太陽電池や熱電材料で注目される。', '金属と非金属の中間的性質を持つ。'] },
+        { number: 53, symbol: 'I', name: 'ヨウ素', latin: 'Iodine', group: 17, period: 5, category: 'halogen', weight: '126.90', mnemonic: '', topics: ['紫色を意味するギリシャ語が語源。', 'うがい薬や消毒薬でおなじみ。', '甲状腺ホルモンに必要な元素でもある。'] },
+        { number: 54, symbol: 'Xe', name: 'キセノン', latin: 'Xenon', group: 18, period: 5, category: 'noble', weight: '131.29', mnemonic: '', topics: ['ギリシャ語で「よそもの・異邦人」が語源。', '自動車のキセノンランプで知られる。', '麻酔研究や宇宙推進でも話題になる。'] },
+        { number: 55, symbol: 'Cs', name: 'セシウム', latin: 'Caesium', group: 1, period: 6, category: 'alkali', weight: '132.91', mnemonic: '', topics: ['空色を意味するラテン語が語源。', 'セシウム原子時計は時間の基準に使われる。', '放射性セシウムの話題で耳にすることも多い。'] },
+        { number: 56, symbol: 'Ba', name: 'バリウム', latin: 'Barium', group: 2, period: 6, category: 'alkaline', weight: '137.33', mnemonic: '', topics: ['ギリシャ語で「重い」が語源。', '胃のX線検査で使う造影剤として有名。', '花火の緑色発色にも使われる。'] },
+        { number: 57, symbol: 'La', name: 'ランタン', latin: 'Lanthanum', group: 3, period: 8, category: 'lanthanide', weight: '138.91', mnemonic: '', topics: ['ギリシャ語で「隠れている」が語源。', 'レンズガラスや電池材料に使われる。', 'ランタノイドの先頭としてよく覚える元素。'] },
+        { number: 58, symbol: 'Ce', name: 'セリウム', latin: 'Cerium', group: 4, period: 8, category: 'lanthanide', weight: '140.12', mnemonic: '', topics: ['小惑星ケレスに由来。', '研磨剤や自動車触媒に使われる。', 'レアアースの中でも比較的よく利用される。'] },
+        { number: 59, symbol: 'Pr', name: 'プラセオジム', latin: 'Praseodymium', group: 5, period: 8, category: 'lanthanide', weight: '140.91', mnemonic: '', topics: ['「緑の双子」という意味のギリシャ語が語源。', '磁石や特殊ガラスに利用される。', 'レアアース磁石分野で見かける元素。'] },
+        { number: 60, symbol: 'Nd', name: 'ネオジム', latin: 'Neodymium', group: 6, period: 8, category: 'lanthanide', weight: '144.24', mnemonic: '', topics: ['「新しい双子」が語源。', 'ネオジム磁石は非常に強力。', 'EVモーターや風力発電で重要性が高い。'] },
+        { number: 61, symbol: 'Pm', name: 'プロメチウム', latin: 'Promethium', group: 7, period: 8, category: 'lanthanide', weight: '[145]', mnemonic: '', topics: ['火を与えた神プロメテウスに由来。', '天然にほとんど存在しない放射性元素。', '特殊な発光装置などで使われたことがある。'] },
+        { number: 62, symbol: 'Sm', name: 'サマリウム', latin: 'Samarium', group: 8, period: 8, category: 'lanthanide', weight: '150.36', mnemonic: '', topics: ['鉱物サマルスキー石に由来。', 'サマリウムコバルト磁石で有名。', '原子炉や特殊磁石材料に使われる。'] },
+        { number: 63, symbol: 'Eu', name: 'ユウロピウム', latin: 'Europium', group: 9, period: 8, category: 'lanthanide', weight: '151.96', mnemonic: '', topics: ['ヨーロッパに由来する名。', 'テレビや蛍光体の赤色発光材料として有名。', '偽造防止インクにも使われる。'] },
+        { number: 64, symbol: 'Gd', name: 'ガドリニウム', latin: 'Gadolinium', group: 10, period: 8, category: 'lanthanide', weight: '157.25', mnemonic: '', topics: ['鉱物学者ガドリンにちなむ。', 'MRI の造影剤として有名。', '中性子を吸収しやすく、原子炉分野でも重要。'] },
+        { number: 65, symbol: 'Tb', name: 'テルビウム', latin: 'Terbium', group: 11, period: 8, category: 'lanthanide', weight: '158.93', mnemonic: '', topics: ['イッテルビー村に由来。', '蛍光体や磁気材料に使われる。', 'レアアースの供給問題で話題になることもある。'] },
+        { number: 66, symbol: 'Dy', name: 'ジスプロシウム', latin: 'Dysprosium', group: 12, period: 8, category: 'lanthanide', weight: '162.50', mnemonic: '', topics: ['「得にくい」が語源。', '高性能磁石の耐熱性向上に使われる。', 'EVや風力発電で重要視されるレアアース。'] },
+        { number: 67, symbol: 'Ho', name: 'ホルミウム', latin: 'Holmium', group: 13, period: 8, category: 'lanthanide', weight: '164.93', mnemonic: '', topics: ['ストックホルムのラテン語名に由来。', '強い磁性を持ち、特殊磁石に利用される。', 'レーザー材料でも使われる。'] },
+        { number: 68, symbol: 'Er', name: 'エルビウム', latin: 'Erbium', group: 14, period: 8, category: 'lanthanide', weight: '167.26', mnemonic: '', topics: ['イッテルビー村に由来。', '光ファイバー増幅器で重要。', '通信インフラの裏側で活躍する。'] },
+        { number: 69, symbol: 'Tm', name: 'ツリウム', latin: 'Thulium', group: 15, period: 8, category: 'lanthanide', weight: '168.93', mnemonic: '', topics: ['古代の北方の地トゥーレに由来。', '希少なレアアースの一つ。', '医療や特殊レーザー用途がある。'] },
+        { number: 70, symbol: 'Yb', name: 'イッテルビウム', latin: 'Ytterbium', group: 16, period: 8, category: 'lanthanide', weight: '173.05', mnemonic: '', topics: ['イッテルビー村に由来。', 'レーザー材料や原子時計研究に使われる。', '量子技術分野でも注目される。'] },
+        { number: 71, symbol: 'Lu', name: 'ルテチウム', latin: 'Lutetium', group: 17, period: 8, category: 'lanthanide', weight: '174.97', mnemonic: '', topics: ['パリのラテン語名 Lutetia に由来。', 'PET検査用の放射性医薬品で話題になる。', 'ランタノイドの最後に位置する。'] },
+        { number: 72, symbol: 'Hf', name: 'ハフニウム', latin: 'Hafnium', group: 4, period: 6, category: 'transition', weight: '178.49', mnemonic: '', topics: ['コペンハーゲンのラテン語名に由来。', '原子炉制御材や半導体分野で重要。', 'ジルコニウムと性質が似ている。'] },
+        { number: 73, symbol: 'Ta', name: 'タンタル', latin: 'Tantalum', group: 5, period: 6, category: 'transition', weight: '180.95', mnemonic: '', topics: ['ギリシャ神話のタンタロスに由来。', 'スマホの小型コンデンサで有名。', '耐食性が高く医療用途にも使われる。'] },
+        { number: 74, symbol: 'W', name: 'タングステン', latin: 'Tungsten', group: 6, period: 6, category: 'transition', weight: '183.84', mnemonic: '', topics: ['非常に重い石という意味の名を持つ。', '金属の中でも特に融点が高い。', '電球フィラメントや切削工具で有名。'] },
+        { number: 75, symbol: 'Re', name: 'レニウム', latin: 'Rhenium', group: 7, period: 6, category: 'transition', weight: '186.21', mnemonic: '', topics: ['ライン川のラテン語名に由来。', 'ジェットエンジンの耐熱合金に使われる。', 'とても希少で高価な金属。'] },
+        { number: 76, symbol: 'Os', name: 'オスミウム', latin: 'Osmium', group: 8, period: 6, category: 'transition', weight: '190.23', mnemonic: '', topics: ['においを意味するギリシャ語が語源。', '非常に密度が高い金属として有名。', '白金族金属の一つ。'] },
+        { number: 77, symbol: 'Ir', name: 'イリジウム', latin: 'Iridium', group: 9, period: 6, category: 'transition', weight: '192.22', mnemonic: '', topics: ['虹を意味するイリスに由来。', '非常にさびにくく、硬い。', '恐竜絶滅の隕石説でイリジウム層が有名。'] },
+        { number: 78, symbol: 'Pt', name: '白金', latin: 'Platinum', group: 10, period: 6, category: 'transition', weight: '195.08', mnemonic: '', topics: ['英名は Platinum。スペイン語の「小さな銀 platina」に由来。', '日本語の白金は、白く美しい金属であることから使われる表記。', '高級装飾品、触媒、自動車排ガス浄化装置などに広く使われる。'] },
+        { number: 79, symbol: 'Au', name: '金', latin: 'Gold', group: 11, period: 6, category: 'transition', weight: '196.97', mnemonic: '', topics: ['記号 Au はラテン語 aurum に由来。', '古くから装飾品や貨幣として珍重された。', '電子部品でもさびにくさと導電性が役立つ。'] },
+        { number: 80, symbol: 'Hg', name: '水銀', latin: 'Mercury', group: 12, period: 6, category: 'transition', weight: '200.59', mnemonic: '', topics: ['記号 Hg は hydrargyrum（液体の銀）に由来。', '常温で液体の金属として有名。', '体温計で知られたが、有害性から扱いが厳しくなった。'] },
+        { number: 81, symbol: 'Tl', name: 'タリウム', latin: 'Thallium', group: 13, period: 6, category: 'post-transition', weight: '204.38', mnemonic: '', topics: ['緑の芽を意味するギリシャ語が語源。', '有毒で知られ、取り扱いに注意が必要。', '特殊ガラスや電子材料に使われる。'] },
+        { number: 82, symbol: 'Pb', name: '鉛', latin: 'Lead', group: 14, period: 6, category: 'post-transition', weight: '207.2', mnemonic: '', topics: ['記号 Pb はラテン語 plumbum に由来。', '重くて柔らかく、電池や遮蔽材に使われる。', '鉛筆の名に残るが、芯そのものは黒鉛。'] },
+        { number: 83, symbol: 'Bi', name: 'ビスマス', latin: 'Bismuth', group: 15, period: 6, category: 'post-transition', weight: '208.98', mnemonic: '', topics: ['比較的毒性が低い重金属として知られる。', '胃薬や低融点合金に使われる。', '結晶の虹色の見た目でも人気。'] },
+        { number: 84, symbol: 'Po', name: 'ポロニウム', latin: 'Polonium', group: 16, period: 6, category: 'post-transition', weight: '[209]', mnemonic: '', topics: ['キュリー夫人の祖国ポーランドに由来。', '強い放射能を持つ元素。', '科学史で重要な発見の一つ。'] },
+        { number: 85, symbol: 'At', name: 'アスタチン', latin: 'Astatine', group: 17, period: 6, category: 'halogen', weight: '[210]', mnemonic: '', topics: ['ギリシャ語で「不安定」が語源。', '天然にほとんど存在しない非常に希少な元素。', '医療応用研究でも注目される。'] },
+        { number: 86, symbol: 'Rn', name: 'ラドン', latin: 'Radon', group: 18, period: 6, category: 'noble', weight: '[222]', mnemonic: '', topics: ['ラジウムの放射壊変でできる希ガス。', '放射性の気体として知られる。', '建物内濃度の管理が健康面で重要。'] },
+        { number: 87, symbol: 'Fr', name: 'フランシウム', latin: 'Francium', group: 1, period: 7, category: 'alkali', weight: '[223]', mnemonic: '', topics: ['フランスに由来。', '天然にはごくわずかしか存在しない。', '非常に反応性が高いアルカリ金属。'] },
+        { number: 88, symbol: 'Ra', name: 'ラジウム', latin: 'Radium', group: 2, period: 7, category: 'alkaline', weight: '[226]', mnemonic: '', topics: ['放射線 ray に由来する。', 'キュリー夫妻の研究で有名。', 'かつて発光塗料などに使われたが危険性が高い。'] },
+        { number: 89, symbol: 'Ac', name: 'アクチニウム', latin: 'Actinium', group: 3, period: 9, category: 'actinide', weight: '[227]', mnemonic: '', topics: ['光線を意味するギリシャ語が語源。', 'アクチノイドの名前のもとになった元素。', '放射性元素として研究用途が中心。'] },
+        { number: 90, symbol: 'Th', name: 'トリウム', latin: 'Thorium', group: 4, period: 9, category: 'actinide', weight: '232.04', mnemonic: '', topics: ['北欧神話の雷神トールに由来。', '将来の原子力燃料候補として注目される。', 'ガスマントル材料として使われた歴史もある。'] },
+        { number: 91, symbol: 'Pa', name: 'プロトアクチニウム', latin: 'Protactinium', group: 5, period: 9, category: 'actinide', weight: '231.04', mnemonic: '', topics: ['アクチニウムの前にある元素という意味。', '非常に希少で放射性を持つ。', '主に研究対象として扱われる。'] },
+        { number: 92, symbol: 'U', name: 'ウラン', latin: 'Uranium', group: 6, period: 9, category: 'actinide', weight: '238.03', mnemonic: '', topics: ['天王星 Uranus に由来。', '原子力発電の燃料として有名。', 'エネルギーと安全保障の両面で重要な資源。'] },
+        { number: 93, symbol: 'Np', name: 'ネプツニウム', latin: 'Neptunium', group: 7, period: 9, category: 'actinide', weight: '[237]', mnemonic: '', topics: ['海王星 Neptune に由来。', '人工元素の一つ。', '核科学研究で扱われる。'] },
+        { number: 94, symbol: 'Pu', name: 'プルトニウム', latin: 'Plutonium', group: 8, period: 9, category: 'actinide', weight: '[244]', mnemonic: '', topics: ['冥王星 Pluto に由来。', '原子力と核兵器の両面で知られる。', '長期管理が必要な放射性物質。'] },
+        { number: 95, symbol: 'Am', name: 'アメリシウム', latin: 'Americium', group: 9, period: 9, category: 'actinide', weight: '[243]', mnemonic: '', topics: ['アメリカに由来。', '家庭用火災報知器に使われることで有名。', '人工の放射性元素。'] },
+        { number: 96, symbol: 'Cm', name: 'キュリウム', latin: 'Curium', group: 10, period: 9, category: 'actinide', weight: '[247]', mnemonic: '', topics: ['キュリー夫妻にちなむ。', '人工元素で、研究用途が中心。', '科学史を象徴する名前の一つ。'] },
+        { number: 97, symbol: 'Bk', name: 'バークリウム', latin: 'Berkelium', group: 11, period: 9, category: 'actinide', weight: '[247]', mnemonic: '', topics: ['バークレーに由来。', '人工的に合成される元素。', '超重元素研究の流れでも登場する。'] },
+        { number: 98, symbol: 'Cf', name: 'カリホルニウム', latin: 'Californium', group: 12, period: 9, category: 'actinide', weight: '[251]', mnemonic: '', topics: ['カリフォルニアに由来。', '強力な中性子源として利用される。', '原子炉や探査機器の分野で使われる。'] },
+        { number: 99, symbol: 'Es', name: 'アインスタイニウム', latin: 'Einsteinium', group: 13, period: 9, category: 'actinide', weight: '[252]', mnemonic: '', topics: ['アインシュタインにちなむ。', '人工元素の一つ。', '極めて少量しか作れない。'] },
+        { number: 100, symbol: 'Fm', name: 'フェルミウム', latin: 'Fermium', group: 14, period: 9, category: 'actinide', weight: '[257]', mnemonic: '', topics: ['フェルミにちなむ。', '人工元素の一つ。', '核物理研究で名前を見る。'] },
+        { number: 101, symbol: 'Md', name: 'メンデレビウム', latin: 'Mendelevium', group: 15, period: 9, category: 'actinide', weight: '[258]', mnemonic: '', topics: ['周期表の父メンデレーエフにちなむ。', '人工元素の一つ。', '周期表研究の歴史を思い出しやすい名前。'] },
+        { number: 102, symbol: 'No', name: 'ノーベリウム', latin: 'Nobelium', group: 16, period: 9, category: 'actinide', weight: '[259]', mnemonic: '', topics: ['ノーベルにちなむ。', '人工元素の一つ。', '超重元素研究の文脈で登場する。'] },
+        { number: 103, symbol: 'Lr', name: 'ローレンシウム', latin: 'Lawrencium', group: 17, period: 9, category: 'actinide', weight: '[266]', mnemonic: '', topics: ['ローレンスにちなむ。', 'アクチノイド列の最後。', '人工元素で研究対象。'] },
+        { number: 104, symbol: 'Rf', name: 'ラザホージウム', latin: 'Rutherfordium', group: 4, period: 7, category: 'transition', weight: '[267]', mnemonic: '', topics: ['ラザフォードにちなむ。', '超重元素の一つ。', '人工合成でのみ得られる。'] },
+        { number: 105, symbol: 'Db', name: 'ドブニウム', latin: 'Dubnium', group: 5, period: 7, category: 'transition', weight: '[268]', mnemonic: '', topics: ['ロシアのドゥブナに由来。', '超重元素の一つ。', '研究施設間の命名競争でも知られる。'] },
+        { number: 106, symbol: 'Sg', name: 'シーボーギウム', latin: 'Seaborgium', group: 6, period: 7, category: 'transition', weight: '[269]', mnemonic: '', topics: ['シーボーグ博士にちなむ。', '超重元素の一つ。', '人工合成のみで得られる。'] },
+        { number: 107, symbol: 'Bh', name: 'ボーリウム', latin: 'Bohrium', group: 7, period: 7, category: 'transition', weight: '[270]', mnemonic: '', topics: ['ボーアにちなむ。', '超重元素の一つ。', 'ごく短時間しか存在しない。'] },
+        { number: 108, symbol: 'Hs', name: 'ハッシウム', latin: 'Hassium', group: 8, period: 7, category: 'transition', weight: '[269]', mnemonic: '', topics: ['ドイツのヘッセン州に由来。', '超重元素の一つ。', '人工合成元素。'] },
+        { number: 109, symbol: 'Mt', name: 'マイトネリウム', latin: 'Meitnerium', group: 9, period: 7, category: 'transition', weight: '[278]', mnemonic: '', topics: ['マイトナーにちなむ。', '超重元素の一つ。', '元素名に女性科学者が入る例としても印象的。'] },
+        { number: 110, symbol: 'Ds', name: 'ダームスタチウム', latin: 'Darmstadtium', group: 10, period: 7, category: 'transition', weight: '[281]', mnemonic: '', topics: ['ドイツのダルムシュタットに由来。', '超重元素の一つ。', '人工合成のみで存在が確認される。'] },
+        { number: 111, symbol: 'Rg', name: 'レントゲニウム', latin: 'Roentgenium', group: 11, period: 7, category: 'transition', weight: '[282]', mnemonic: '', topics: ['レントゲンにちなむ。', 'X線の発見者を記念した元素名。', '超重元素研究で登場する。'] },
+        { number: 112, symbol: 'Cn', name: 'コペルニシウム', latin: 'Copernicium', group: 12, period: 7, category: 'transition', weight: '[285]', mnemonic: '', topics: ['コペルニクスにちなむ。', '超重元素の一つ。', '人工合成元素。'] },
+        { number: 113, symbol: 'Nh', name: 'ニホニウム', latin: 'Nihonium', group: 13, period: 7, category: 'post-transition', weight: '[286]', mnemonic: '', topics: ['日本に由来し、日本で発見された元素。', '元素名に日本が入っていることが大きな話題になった。', '日本の科学史で特に人気の高い元素。'] },
+        { number: 114, symbol: 'Fl', name: 'フレロビウム', latin: 'Flerovium', group: 14, period: 7, category: 'post-transition', weight: '[289]', mnemonic: '', topics: ['フレロフ研究所にちなむ。', '超重元素の一つ。', '人工合成元素。'] },
+        { number: 115, symbol: 'Mc', name: 'モスコビウム', latin: 'Moscovium', group: 15, period: 7, category: 'post-transition', weight: '[290]', mnemonic: '', topics: ['モスクワ地方に由来。', '超重元素の一つ。', '人工合成元素。'] },
+        { number: 116, symbol: 'Lv', name: 'リバモリウム', latin: 'Livermorium', group: 16, period: 7, category: 'post-transition', weight: '[293]', mnemonic: '', topics: ['リバモア研究所にちなむ。', '超重元素の一つ。', '人工合成元素。'] },
+        { number: 117, symbol: 'Ts', name: 'テネシン', latin: 'Tennessine', group: 17, period: 7, category: 'halogen', weight: '[294]', mnemonic: '', topics: ['アメリカのテネシー州に由来。', '最近加わった新しい元素の一つとして印象的。', '人工合成のハロゲン元素。'] },
+        { number: 118, symbol: 'Og', name: 'オガネソン', latin: 'Oganesson', group: 18, period: 7, category: 'noble', weight: '[294]', mnemonic: '', topics: ['オガネシアン博士にちなむ。', '現在の周期表で一番最後にある元素。', '人工合成された希ガス元素。'] }
+      ];
+      const STORAGE_KEY = 'element-memory-land-v4';
+      const STORAGE_META_KEY = 'element-memory-land-storage-meta';
+      const DEFAULT_USERS = ['あおい', 'ゆうた'];
+      const QUESTIONS_PER_SET = 10;
+      const ANSWER_SPLASH_MS = 900;
+      const CATEGORY_LABELS = {
+        alkali: 'アルカリ金属', alkaline: 'アルカリ土類金属', transition: '遷移金属', 'post-transition': '典型金属', metalloid: '半金属', nonmetal: '非金属', halogen: 'ハロゲン', noble: '希ガス', lanthanide: 'ランタノイド', actinide: 'アクチノイド'
+      };
+      const CATEGORY_COLORS = {
+        alkali: '#ffd66b', alkaline: '#ffb970', transition: '#78c9ff', 'post-transition': '#afbcff', metalloid: '#78deb1', nonmetal: '#90b8ff', halogen: '#ff93be', noble: '#c39dff', lanthanide: '#ffbf7d', actinide: '#ff9e9e'
+      };
+      const DEFAULT_PROGRESS = Object.fromEntries(ELEMENTS.map((element) => [element.symbol, { asked: 0, correct: 0, wrong: 0, lastAskedAt: 0 }]));
+      const state = {
+        store: loadStore(),
+        activeUserId: null,
+        currentView: 'home',
+        currentScreen: 'management',
+        gameMode: 'symbolToName',
+        game: createEmptyGame(),
+        selectedElementSymbol: 'H'
+      };
+      const refs = {
+        managementScreen: document.getElementById('screen-management'),
+        gameScreen: document.getElementById('screen-game'),
+        modalBackdrop: document.getElementById('elementModalBackdrop'),
+        modal: document.getElementById('elementModal'),
+        answerSplash: document.getElementById('answerSplash')
+      };
+      initialize();
+      function initialize() {
+        ensureDefaultUsers();
+        state.activeUserId = state.store.activeUserId || state.store.users[0]?.id || null;
+        saveStore();
+        renderAll();
+      }
+      function createEmptyGame() {
+        return { running: false, questionIds: [], currentIndex: 0, currentQuestion: null, answers: [], lastFeedback: null, finished: false, summary: null, locked: false };
+      }
+      function createUser(name) {
+        return {
+          id: `${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+          name: name.trim(),
+          createdAt: Date.now(),
+          stats: { totalSets: 0, totalAnswers: 0, totalCorrect: 0, totalWrong: 0, modes: { symbolToName: { answers: 0, correct: 0, wrong: 0 }, nameToSymbol: { answers: 0, correct: 0, wrong: 0 } } },
+          progress: structuredClone(DEFAULT_PROGRESS), history: [], weakSymbols: []
+        };
+      }
+      function loadStore() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (!raw) return { activeUserId: null, users: [] };
+          const parsed = JSON.parse(raw);
+          return { activeUserId: parsed.activeUserId || null, users: Array.isArray(parsed.users) ? parsed.users.map(normalizeUser) : [] };
+        } catch (error) {
+          console.error('読み込み失敗', error);
+          return { activeUserId: null, users: [] };
+        }
+      }
+      function normalizeUser(user) {
+        const progress = structuredClone(DEFAULT_PROGRESS);
+        Object.entries(user.progress || {}).forEach(([symbol, value]) => {
+          if (progress[symbol]) progress[symbol] = { asked: Number(value.asked || 0), correct: Number(value.correct || 0), wrong: Number(value.wrong || 0), lastAskedAt: Number(value.lastAskedAt || 0) };
+        });
+        return {
+          id: user.id || `${Date.now()}-${Math.random()}`,
+          name: user.name || 'ななし', createdAt: Number(user.createdAt || Date.now()),
+          stats: {
+            totalSets: Number(user.stats?.totalSets || 0), totalAnswers: Number(user.stats?.totalAnswers || 0), totalCorrect: Number(user.stats?.totalCorrect || 0), totalWrong: Number(user.stats?.totalWrong || 0),
+            modes: {
+              symbolToName: { answers: Number(user.stats?.modes?.symbolToName?.answers || 0), correct: Number(user.stats?.modes?.symbolToName?.correct || 0), wrong: Number(user.stats?.modes?.symbolToName?.wrong || 0) },
+              nameToSymbol: { answers: Number(user.stats?.modes?.nameToSymbol?.answers || 0), correct: Number(user.stats?.modes?.nameToSymbol?.correct || 0), wrong: Number(user.stats?.modes?.nameToSymbol?.wrong || 0) }
+            }
+          },
+          progress, history: Array.isArray(user.history) ? user.history.slice(-30) : [], weakSymbols: Array.isArray(user.weakSymbols) ? user.weakSymbols : []
+        };
+      }
+      function saveStore() {
+        state.store.activeUserId = state.activeUserId;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state.store));
+        localStorage.setItem(STORAGE_META_KEY, JSON.stringify({ type: 'localStorage', key: STORAGE_KEY, savedAt: Date.now() }));
+      }
+      function ensureDefaultUsers() { if (!state.store.users.length) DEFAULT_USERS.forEach((name) => state.store.users.push(createUser(name))); }
+      function getActiveUser() { return state.store.users.find((user) => user.id === state.activeUserId) || state.store.users[0] || null; }
+      function getSelectedElement() { return ELEMENTS.find((element) => element.symbol === state.selectedElementSymbol) || ELEMENTS[0]; }
+      function setActiveUser(id) { state.activeUserId = id; state.game = createEmptyGame(); saveStore(); renderAll(); }
+      function switchScreen(screen) { state.currentScreen = screen; refs.managementScreen.classList.toggle('active', screen === 'management'); refs.gameScreen.classList.toggle('active', screen === 'game'); }
+      function switchView(view) { state.currentView = view; renderAll(); }
+      function renderAll() { renderManagementScreen(); renderGameScreen(); switchScreen(state.currentScreen); }
+      function renderManagementScreen() {
+        const user = getActiveUser();
+        const weak = getWeakElements(user).slice(0, 5);
+        refs.managementScreen.innerHTML = `
+          <div class="management-layout">
+            <aside class="sidebar">
+              <section class="panel user-card">
+                <div><h2 class="section-title">👧 ユーザー</h2><div class="sub">学習データは localStorage に保存されます</div></div>
+                <div class="user-list">
+                  ${state.store.users.map((entry) => `
+                    <button class="user-item ${entry.id === user?.id ? 'active' : ''}" data-user-id="${entry.id}" type="button">
+                      <strong>${escapeHtml(entry.name)}</strong><br /><span class="sub">正答率 ${calcAccuracy(entry.stats.totalCorrect, entry.stats.totalAnswers)}% ・ ${entry.stats.totalSets}セット</span>
+                    </button>`).join('')}
+                </div>
+                <div class="add-user"><input id="newUserInput" type="text" maxlength="20" placeholder="なまえをいれてね" /><button id="addUserButton" class="control-button primary" type="button">追加</button></div>
+                <div class="danger-row"><button id="deleteUserButton" class="danger-button" type="button">選択ユーザーを削除</button><button id="clearUserDataButton" class="ghost-button" type="button">学習データをクリア</button></div>
+                <div class="sub">※ 保存方式: localStorage（このブラウザ内に保存）</div>
+              </section>
+              <section class="panel nav-card">
+                <h2 class="section-title">🗺 メニュー</h2>
+                <button class="nav-button ${state.currentView === 'home' ? 'active' : ''}" data-view="home" type="button">モード選択</button>
+                <button class="nav-button ${state.currentView === 'table' ? 'active' : ''}" data-view="table" type="button">元素記号表</button>
+                <button class="nav-button ${state.currentView === 'mnemonic' ? 'active' : ''}" data-view="mnemonic" type="button">語呂あわせ</button>
+                <button class="nav-button ${state.currentView === 'profile' ? 'active' : ''}" data-view="profile" type="button">学習きろく</button>
+              </section>
+              <section class="panel stats-card"><h2 class="section-title">⭐ いまのユーザー</h2><div class="sub">${user ? `${escapeHtml(user.name)} さんの学習データを表示中` : 'ユーザーがいません'}</div><div class="summary-grid">${renderMiniSummary(user)}</div></section>
+            </aside>
+            <main class="management-main panel">
+              <div class="top-actions"><button id="openGameFromHeader" class="tile-button" type="button">🎮 ゲーム画面を開く</button><span class="sub">ゲームは別画面、元素表はクリックで詳細表示できます。</span></div>
+              <section class="view ${state.currentView === 'home' ? 'active' : ''}">${renderHomeView(user, weak)}</section>
+              <section class="view ${state.currentView === 'table' ? 'active' : ''}">${renderTableView()}</section>
+              <section class="view ${state.currentView === 'mnemonic' ? 'active' : ''}">${renderMnemonicView()}</section>
+              <section class="view ${state.currentView === 'profile' ? 'active' : ''}">${renderProfileView(user)}</section>
+            </main>
+          </div>`;
+        bindManagementEvents();
+      }
+      function renderMiniSummary(user) {
+        if (!user) return '<div class="small-tile">ユーザーがいません</div>';
+        const weak = getWeakElements(user)[0];
+        return [
+          { label: '答えた数', value: user.stats.totalAnswers },
+          { label: '正答率', value: `${calcAccuracy(user.stats.totalCorrect, user.stats.totalAnswers)}%` },
+          { label: '誤答数', value: user.stats.totalWrong },
+          { label: '苦手', value: weak ? weak.symbol : 'なし' }
+        ].map((item) => `<div class="small-tile"><div class="sub">${item.label}</div><div style="font-size:1.35rem;font-weight:800;">${item.value}</div></div>`).join('');
+      }
+      function renderHomeView(user, weak) {
+        return `
+          <div class="screen-intro">
+            <div class="tile"><h2>🎮 モード選択</h2><p>10問1セット。未出題や苦手寄りの問題を優先しますが、少しの誤答だけでは苦手Topに入りにくいよう改善しました。</p><div class="mode-grid" style="margin-top:10px;"><button class="tile-button" data-start-mode="symbolToName" type="button">🔤 記号 → 元素名</button><button class="tile-button" data-start-mode="nameToSymbol" type="button">📝 元素名 → 記号</button></div></div>
+            <div class="tile"><h3>🧠 ${escapeHtml(user?.name || 'ユーザー')} さんの苦手トップ</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${item.symbol} / ${item.name}</strong><br /><span class="sub">誤答 ${item.wrong} 回 ・ 出題 ${item.asked} 回 ・ 判定 ${item.levelLabel}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。まずは何セットか遊んでみよう！</div>'}</div></div>
+          </div>
+          <div class="cards-grid scroll-area">
+            <div class="tile"><h3>📚 学習のしかた</h3><ul><li>ランダム出題（未出題・誤答を優先）</li><li>1セット10問</li><li>ユーザーごとに成績を保存</li><li>元素記号表から詳細情報を見て関連づけて覚える</li></ul></div>
+            <div class="tile"><h3>🧩 使いやすさ</h3><ul><li>ゲーム画面と閲覧画面を分離</li><li>FullHD / iPad の両方で見やすいレイアウト</li><li>ユーザー削除とデータクリアに対応</li><li>答えた直後にスプラッシュ表示で誤操作を防止</li></ul></div>
+          </div>`;
+      }
+      function renderTableView() {
+        return `
+          <div class="tile"><h2>🧾 元素記号表</h2><p>元素をクリックすると、ポップアップで大きな記号表示と詳しいトピック情報が見られます。語源や用途も確認できます。</p></div>
+          <div class="table-layout"><div class="table-help sub">💡 見たい元素をタップ / クリックするとポップアップで詳しく見られます。</div><div class="tile table-board scroll-area"><div class="mini-legend">${Object.entries(CATEGORY_LABELS).map(([key, label]) => `<span class="legend-item"><span class="legend-dot" style="background:${CATEGORY_COLORS[key]}"></span>${label}</span>`).join('')}</div><div class="periodic-board" style="margin-top:8px;">${renderPeriodicBoard({ mode: 'full', gameMode: false, interactive: true })}</div></div></div>`;
+      }
+      function renderElementDetail(element, modal) {
+        return `
+          <div class="detail-big"><div class="big-symbol ${element.category}" style="background:${CATEGORY_COLORS[element.category]}33;">${element.symbol}</div><div><h3>${element.name}</h3><div class="sub">原子番号 ${element.number} ・ 英名 ${element.latin}</div><div class="sub">分類: ${CATEGORY_LABELS[element.category]} / 原子量 ${element.weight}</div></div></div>
+          <div class="tile"><h4>🔍 この元素のポイント</h4><div class="topic-list">${element.topics.map((topic) => `<div class="topic-item">${topic}</div>`).join('')}</div></div>
+          <div class="tile"><h4>🧠 覚え方</h4><p>${element.symbol} / ${element.name} を、語源・使い道・周期表の場所の3つでセットにして覚えるのがおすすめです。</p></div>
+          ${modal ? '<div class="button-row"><button id="closeElementModal" class="ghost-button" type="button">閉じる</button></div>' : ''}`;
+      }
+      function renderMnemonicView() {
+        const famousPhrases = [
+          { title: '1〜20番の定番', phrase: '水兵リーベ ぼくの船 なまがるシップス クラークか', detail: 'H He / Li Be / B C N O F Ne / Na Mg Al Si P S / Cl Ar K Ca', note: '最初に覚える定番。' },
+          { title: '21〜30番', phrase: 'すっちまん ふぇこ にどう あえん', detail: 'Sc Ti / V Cr Mn / Fe Co Ni / Cu Zn', note: '4周期前半金属。' },
+          { title: '31〜36番', phrase: 'がげあっせ ぶらくり', detail: 'Ga Ge As Se / Br Kr', note: '短く区切って暗唱。' },
+          { title: '37〜54番', phrase: 'ルビー ストロン イット ジル ニオ モリ テク ルロ パラ 銀 カド イン スズ アンチ テル ヨウ キセ', detail: 'Rb Sr Y Zr Nb Mo Tc Ru Rh Pd Ag Cd In Sn Sb Te I Xe', note: '長いので2〜3元素ずつ区切る。' },
+          { title: '55〜56番 + ランタノイド入口', phrase: 'セシ バリ ラン セ プラ ネオ', detail: 'Cs Ba La Ce Pr Nd', note: '6周期の入口。' },
+          { title: '日本生まれの元素', phrase: 'にほん生まれ ニホニウム', detail: 'Nh = ニホニウム（113番）', note: '豆知識として人気。' }
+        ];
+        return `<div class="tile"><h2>🎵 語呂あわせモード</h2><p>元素を並びで覚えるための有名な暗記フレーズを中心にまとめました。</p></div><div class="cards-grid">${famousPhrases.map((item) => `<div class="tile"><h3>${item.title}</h3><p><strong>語呂:</strong> ${item.phrase}</p><p><strong>対応:</strong> ${item.detail}</p><p><strong>使い方:</strong> ${item.note}</p></div>`).join('')}</div>`;
+      }
+      function renderProfileView(user) {
+        const weak = getWeakElements(user).slice(0, 12);
+        return `
+          <div class="tile"><h2>📈 ${escapeHtml(user.name)} さんの学習きろく</h2><p>誤答が少しあるだけでは苦手Topに出にくいよう、出題数と誤答率の両方で判定しています。</p></div>
+          <div class="summary-grid"><div class="small-tile"><div class="sub">プレイしたセット</div><div style="font-size:1.7rem;font-weight:900;">${user.stats.totalSets}</div></div><div class="small-tile"><div class="sub">総回答数</div><div style="font-size:1.7rem;font-weight:900;">${user.stats.totalAnswers}</div></div><div class="small-tile"><div class="sub">正答率</div><div style="font-size:1.7rem;font-weight:900;">${calcAccuracy(user.stats.totalCorrect, user.stats.totalAnswers)}%</div></div><div class="small-tile"><div class="sub">記号→名前</div><div style="font-size:1.7rem;font-weight:900;">${calcAccuracy(user.stats.modes.symbolToName.correct, user.stats.modes.symbolToName.answers)}%</div></div></div>
+          <div class="cards-grid scroll-area"><div class="tile"><h3>💡 苦手元素ランキング</h3><div class="weak-list" style="margin-top:8px;">${weak.length ? weak.map((item, index) => `<div class="weak-item"><strong>${index + 1}. ${item.symbol} / ${item.name}</strong><br /><span class="sub">出題 ${item.asked} 回 ・ 正解 ${item.correct} 回 ・ 誤答 ${item.wrong} 回 ・ 正答率 ${item.accuracy}% ・ ${item.levelLabel}</span></div>`).join('') : '<div class="empty-note">まだ苦手判定に十分なデータがありません。</div>'}</div></div><div class="tile"><h3>🕘 最近のセット</h3><table><thead><tr><th>日時</th><th>モード</th><th>正答</th><th>率</th></tr></thead><tbody>${user.history.length ? user.history.map((entry) => `<tr><td>${formatDate(entry.playedAt)}</td><td>${entry.mode === 'symbolToName' ? '記号→名前' : '名前→記号'}</td><td>${entry.correct}/10</td><td>${entry.accuracy}%</td></tr>`).join('') : '<tr><td colspan="4">まだセット記録がありません。</td></tr>'}</tbody></table></div></div>`;
+      }
+      function renderGameScreen() {
+        const user = getActiveUser();
+        const game = state.game;
+        const modeLabel = state.gameMode === 'symbolToName' ? '記号 → 元素名' : '元素名 → 記号';
+        if (!game.running && !game.finished) {
+          refs.gameScreen.innerHTML = `<div class="game-screen"><div class="panel game-header"><div class="tile"><h2>🎯 ゲーム画面</h2><p>この画面はゲーム専用です。FullHD と iPad の両方で周期表全体が見やすいサイズに調整しています。</p><div class="mode-strip" style="margin-top:8px;"><button class="tile-button" data-start-mode="symbolToName" type="button">記号 → 元素名ではじめる</button><button class="ghost-button" data-start-mode="nameToSymbol" type="button">元素名 → 記号ではじめる</button></div></div><div class="tile"><h3>👤 プレイ中ユーザー</h3><p>${escapeHtml(user.name)} さん</p><div class="button-row" style="margin-top:8px;"><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div></div></div></div>`;
+          bindGameEvents();
+          return;
+        }
+        if (game.finished) {
+          refs.gameScreen.innerHTML = `
+            <div class="game-screen">
+              <div class="panel game-header"><div class="tile"><h2>🏁 セット終了！</h2><p>${escapeHtml(user.name)} さんの今回の結果です。</p></div><div class="tile"><h3>🎉 まとめ</h3><p>モード: ${modeLabel}</p><p>正解: ${game.summary.correct} / ${QUESTIONS_PER_SET}</p><p>正答率: ${game.summary.accuracy}%</p><p>次にがんばる元素: ${game.summary.focus || 'なし'}</p></div></div>
+              <div class="panel scroll-area"><table><thead><tr><th>#</th><th>問題</th><th>選んだもの</th><th>正解</th><th>結果</th></tr></thead><tbody>${game.answers.map((answer, index) => `<tr><td>${index + 1}</td><td>${state.gameMode === 'symbolToName' ? `${answer.question.symbol} / ${answer.question.name}` : `${answer.question.name} / ${answer.question.symbol}`}</td><td>${answer.selected.symbol} / ${answer.selected.name}</td><td>${answer.question.symbol} / ${answer.question.name}</td><td>${answer.correct ? '⭕ 正解' : '❌ まちがい'}</td></tr>`).join('')}</tbody></table></div>
+              <div class="panel button-row"><button id="retrySameMode" class="tile-button" type="button">もう1セット</button><button id="backToManagementButton" class="ghost-button" type="button">管理画面にもどる</button></div>
+            </div>`;
+          bindGameEvents();
+          return;
+        }
+        const question = game.currentQuestion;
+        const progressPercent = (game.currentIndex / QUESTIONS_PER_SET) * 100;
+        refs.gameScreen.innerHTML = `
+          <div class="game-screen">
+            <div class="panel toolbar" style="padding:4px 6px;gap:4px;align-items:center;"><button id="backToManagementButton" class="ghost-button" type="button">← 管理</button><button class="pill ${state.gameMode === 'symbolToName' ? 'active' : ''}" data-mode-switch="symbolToName" type="button">記号→名前</button><button class="pill ${state.gameMode === 'nameToSymbol' ? 'active' : ''}" data-mode-switch="nameToSymbol" type="button">名前→記号</button><button id="restartGameButton" class="ghost-button" type="button">やり直し</button><span class="sub">${escapeHtml(user.name)}</span></div>
+            <div class="game-layout">
+              <div class="question-panel">
+                <div class="question-box"><div class="question-label">${modeLabel} ・ 第 ${game.currentIndex + 1} 問 / ${QUESTIONS_PER_SET}</div><div class="question-value">${state.gameMode === 'symbolToName' ? question.symbol : question.name}</div><div class="question-hint">${state.gameMode === 'symbolToName' ? 'この記号の元素名を、下の周期表から選ぼう！' : 'この元素名の記号を、下の周期表から選ぼう！'}</div></div>
+                <div class="status-box"><div class="big-status">${escapeHtml(user.name)} さん、ファイト！</div><div class="sub">未出題や誤答寄りの元素が少し出やすくなります。</div><div class="progress-bar"><div class="progress-fill" style="width:${progressPercent}%"></div></div><div class="sub">${game.currentIndex}問完了 / あと ${QUESTIONS_PER_SET - game.currentIndex} 問</div>${game.lastFeedback ? `<div class="result-banner ${game.lastFeedback.correct ? 'good' : 'bad'}">${game.lastFeedback.correct ? `前回: 正解 (${game.lastFeedback.correctElement.symbol} / ${game.lastFeedback.correctElement.name})` : `前回: ${game.lastFeedback.selectedElement.symbol} / ${game.lastFeedback.selectedElement.name} → 正解は ${game.lastFeedback.correctElement.symbol} / ${game.lastFeedback.correctElement.name}`}</div>` : '<div class="sub">答えたいマスをクリックしてね。</div>'}</div>
+              </div>
+              <div class="panel board-panel"><div class="mini-legend">${Object.entries(CATEGORY_LABELS).map(([key, label]) => `<span class="legend-item"><span class="legend-dot" style="background:${CATEGORY_COLORS[key]}"></span>${label}</span>`).join('')}</div><div class="sub">${state.gameMode === 'symbolToName' ? 'ゲーム中は元素記号を隠し、元素名中心で選べます。' : 'ゲーム中は元素名を隠し、元素記号中心で選べます。'} ${game.locked ? 'いまは判定表示中です。' : ''}</div><div class="periodic-board">${renderPeriodicBoard({ mode: state.gameMode, gameMode: true, currentQuestion: question, feedback: game.lastFeedback, interactive: false, locked: game.locked })}</div></div>
+            </div>
+          </div>`;
+        bindGameEvents();
+      }
+      function bindManagementEvents() {
+        document.querySelectorAll('[data-user-id]').forEach((button) => button.addEventListener('click', () => setActiveUser(button.dataset.userId)));
+        document.querySelectorAll('[data-view]').forEach((button) => button.addEventListener('click', () => switchView(button.dataset.view)));
+        document.querySelectorAll('[data-start-mode]').forEach((button) => button.addEventListener('click', () => { state.gameMode = button.dataset.startMode; startNewGame(); state.currentScreen = 'game'; renderAll(); }));
+        document.querySelectorAll('[data-open-element-modal]').forEach((button) => button.addEventListener('click', () => openElementModal(button.dataset.openElementModal)));
+        const addButton = document.getElementById('addUserButton');
+        const input = document.getElementById('newUserInput');
+        addButton?.addEventListener('click', handleAddUser);
+        input?.addEventListener('keydown', (event) => { if (event.key === 'Enter') handleAddUser(); });
+        document.getElementById('deleteUserButton')?.addEventListener('click', handleDeleteUser);
+        document.getElementById('clearUserDataButton')?.addEventListener('click', handleClearUserData);
+        document.getElementById('openGameFromHeader')?.addEventListener('click', () => { state.currentScreen = 'game'; renderAll(); });
+      }
+      function bindGameEvents() {
+        document.querySelectorAll('[data-start-mode]').forEach((button) => button.addEventListener('click', () => { state.gameMode = button.dataset.startMode; startNewGame(); renderAll(); }));
+        document.querySelectorAll('[data-mode-switch]').forEach((button) => button.addEventListener('click', () => { state.gameMode = button.dataset.modeSwitch; startNewGame(); renderAll(); }));
+        document.getElementById('restartGameButton')?.addEventListener('click', () => { startNewGame(); renderAll(); });
+        document.getElementById('retrySameMode')?.addEventListener('click', () => { startNewGame(); renderAll(); });
+        document.getElementById('backToManagementButton')?.addEventListener('click', () => { state.currentScreen = 'management'; renderAll(); });
+        document.querySelectorAll('[data-select-symbol]').forEach((button) => button.addEventListener('click', () => answerQuestion(button.dataset.selectSymbol)));
+      }
+      function handleAddUser() {
+        const input = document.getElementById('newUserInput');
+        const name = input?.value.trim() || '';
+        if (!name) return;
+        if (state.store.users.some((user) => user.name === name)) { alert('その名前はすでにあるよ。ちがう名前にしてね。'); return; }
+        const user = createUser(name);
+        state.store.users.push(user); state.activeUserId = user.id; if (input) input.value = ''; saveStore(); renderAll();
+      }
+      function handleDeleteUser() {
+        const activeUser = getActiveUser(); if (!activeUser) return;
+        if (state.store.users.length === 1) { alert('最後の1人は削除できません。別のユーザーを追加してから削除してください。'); return; }
+        if (!confirm(`${activeUser.name} さんを削除します。学習データも消えます。よろしいですか？`)) return;
+        state.store.users = state.store.users.filter((user) => user.id !== activeUser.id); state.activeUserId = state.store.users[0]?.id || null; state.game = createEmptyGame(); saveStore(); renderAll();
+      }
+      function handleClearUserData() {
+        const activeUser = getActiveUser(); if (!activeUser) return;
+        if (!confirm(`${activeUser.name} さんの学習データをクリアします。ユーザー名は残ります。よろしいですか？`)) return;
+        activeUser.stats = { totalSets: 0, totalAnswers: 0, totalCorrect: 0, totalWrong: 0, modes: { symbolToName: { answers: 0, correct: 0, wrong: 0 }, nameToSymbol: { answers: 0, correct: 0, wrong: 0 } } };
+        activeUser.progress = structuredClone(DEFAULT_PROGRESS); activeUser.history = []; activeUser.weakSymbols = []; state.game = createEmptyGame(); saveStore(); renderAll();
+      }
+      function startNewGame() {
+        const user = getActiveUser(); if (!user) return;
+        const questionIds = selectWeightedQuestions(user, QUESTIONS_PER_SET);
+        state.game = { running: true, questionIds, currentIndex: 0, currentQuestion: ELEMENTS.find((element) => element.symbol === questionIds[0]), answers: [], lastFeedback: null, finished: false, summary: null, locked: false };
+      }
+      function answerQuestion(selectedSymbol) {
+        const user = getActiveUser(); const game = state.game;
+        if (!user || !game.running || game.finished || game.locked) return;
+        const question = game.currentQuestion;
+        const selected = ELEMENTS.find((element) => element.symbol === selectedSymbol);
+        const correct = selected.symbol === question.symbol;
+        const now = Date.now();
+        const progress = user.progress[question.symbol];
+        progress.asked += 1; progress.lastAskedAt = now; if (correct) progress.correct += 1; else progress.wrong += 1;
+        user.stats.totalAnswers += 1; user.stats.totalCorrect += correct ? 1 : 0; user.stats.totalWrong += correct ? 0 : 1;
+        user.stats.modes[state.gameMode].answers += 1; user.stats.modes[state.gameMode].correct += correct ? 1 : 0; user.stats.modes[state.gameMode].wrong += correct ? 0 : 1;
+        game.answers.push({ question, selected, correct, mode: state.gameMode, answeredAt: now });
+        game.lastFeedback = { correct, correctElement: question, selectedElement: selected };
+        game.locked = true;
+        updateWeakSymbols(user); saveStore(); renderAll();
+        showAnswerSplash({ correct, question, selected });
+        window.setTimeout(() => {
+          if (game.answers.length >= QUESTIONS_PER_SET) finishGame(user);
+          else { game.currentIndex += 1; game.currentQuestion = ELEMENTS.find((element) => element.symbol === game.questionIds[game.currentIndex]); }
+          game.locked = false;
+          hideAnswerSplash(); saveStore(); renderAll();
+        }, ANSWER_SPLASH_MS);
+      }
+      function showAnswerSplash({ correct, question, selected }) {
+        refs.answerSplash.innerHTML = `<div class="splash-card ${correct ? 'good' : 'bad'}"><div class="splash-emoji">${correct ? '⭕' : '❌'}</div><div class="splash-title">${correct ? 'せいかい！' : 'おしい！'}</div><div class="splash-answer">${correct ? `${question.symbol} / ${question.name} で正解！` : `あなたの答え: ${selected.symbol} / ${selected.name}<br />正解: ${question.symbol} / ${question.name}`}</div><div class="splash-note">判定中は次の問題へ進まないので、誤操作を防げます。</div></div>`;
+        refs.answerSplash.classList.add('open');
+      }
+      function hideAnswerSplash() { refs.answerSplash.classList.remove('open'); refs.answerSplash.innerHTML = ''; }
+      function finishGame(user) {
+        const correct = state.game.answers.filter((answer) => answer.correct).length;
+        const accuracy = calcAccuracy(correct, QUESTIONS_PER_SET);
+        const weakest = getWeakElements(user)[0];
+        user.stats.totalSets += 1;
+        user.history.unshift({ playedAt: Date.now(), mode: state.gameMode, correct, accuracy, answers: state.game.answers.map((answer) => ({ symbol: answer.question.symbol, selectedSymbol: answer.selected.symbol, correct: answer.correct })) });
+        user.history = user.history.slice(0, 20);
+        state.game.running = false; state.game.finished = true; state.game.summary = { correct, accuracy, focus: weakest ? `${weakest.symbol} / ${weakest.name}` : 'なし' };
+      }
+      function updateWeakSymbols(user) { user.weakSymbols = getWeakElements(user).map((item) => item.symbol); }
+      function selectWeightedQuestions(user, count) {
+        const picked = new Set(); const results = [];
+        while (results.length < count && picked.size < ELEMENTS.length) {
+          const available = ELEMENTS.filter((element) => !picked.has(element.symbol));
+          const weights = available.map((element) => calculateWeight(user.progress[element.symbol]));
+          const choice = weightedPick(available, weights); picked.add(choice.symbol); results.push(choice.symbol);
+        }
+        return results;
+      }
+      function calculateWeight(progress) {
+        const unaskedBonus = progress.asked === 0 ? 6 : 0;
+        const wrongBonus = progress.wrong >= 2 ? progress.wrong * 3 : progress.wrong * 1.2;
+        const missRate = progress.asked ? progress.wrong / progress.asked : 0;
+        const weakAccuracyBonus = progress.asked >= 3 ? missRate * 5 : 0;
+        const oldBonus = progress.lastAskedAt ? Math.min(2.5, (Date.now() - progress.lastAskedAt) / (1000 * 60 * 60 * 24 * 7)) : 2;
+        return 1 + unaskedBonus + wrongBonus + weakAccuracyBonus + oldBonus;
+      }
+      function weightedPick(items, weights) {
+        const total = weights.reduce((sum, value) => sum + value, 0); let target = Math.random() * total;
+        for (let i = 0; i < items.length; i += 1) { target -= weights[i]; if (target <= 0) return items[i]; }
+        return items[items.length - 1];
+      }
+      function renderPeriodicBoard({ mode = 'full', gameMode = false, currentQuestion = null, feedback = null, interactive = false, locked = false } = {}) {
+        const cells = []; const map = new Map(ELEMENTS.map((element) => [`${element.period}-${element.group}`, element]));
+        for (let period = 1; period <= 9; period += 1) {
+          for (let group = 1; group <= 18; group += 1) {
+            const key = `${period}-${group}`; const element = map.get(key);
+            if (!element) { cells.push('<div class="periodic-blank"></div>'); continue; }
+            const classes = ['periodic-cell', element.category];
+            if (gameMode) classes.push('selectable'); if (interactive) classes.push('info'); if (feedback?.correctElement?.symbol === element.symbol) classes.push('correct'); if (feedback && !feedback.correct && feedback.selectedElement?.symbol === element.symbol) classes.push('wrong'); if (currentQuestion?.symbol === element.symbol) classes.push('focus');
+            const showSymbol = mode !== 'symbolToName'; const showName = mode !== 'nameToSymbol';
+            const dataAttrs = gameMode ? `${locked ? 'disabled' : ''} data-select-symbol="${element.symbol}"` : interactive ? `data-open-element-modal="${element.symbol}"` : 'type="button"';
+            cells.push(`<button class="${classes.join(' ')}" ${dataAttrs}><div class="topline"><div class="number">${element.number}</div><span class="symbol">${showSymbol ? element.symbol : '？'}</span></div><div class="name">${showName ? element.name : '？'}</div><div class="weight">${element.weight}</div></button>`);
+          }
+        }
+        return cells.join('');
+      }
+      function openElementModal(symbol) {
+        state.selectedElementSymbol = symbol;
+        const element = getSelectedElement();
+        refs.modal.innerHTML = `<div class="modal-header"><div><h2 style="margin:0;">${element.symbol} / ${element.name}</h2><div class="sub">原子番号 ${element.number} ・ ${CATEGORY_LABELS[element.category]}</div></div><button id="closeElementModalTop" class="ghost-button" type="button">閉じる</button></div>${renderElementDetail(element, true)}`;
+        refs.modalBackdrop.classList.add('open');
+        document.getElementById('closeElementModal')?.addEventListener('click', closeElementModal);
+        document.getElementById('closeElementModalTop')?.addEventListener('click', closeElementModal);
+        refs.modalBackdrop.onclick = (event) => { if (event.target === refs.modalBackdrop) closeElementModal(); };
+      }
+      function closeElementModal() { refs.modalBackdrop.classList.remove('open'); }
+      function getWeakElements(user) {
+        if (!user) return [];
+        return ELEMENTS.map((element) => {
+          const progress = user.progress[element.symbol];
+          const accuracy = calcAccuracy(progress.correct, progress.asked);
+          const missRate = progress.asked ? progress.wrong / progress.asked : 0;
+          const enoughData = progress.asked >= 4 || progress.wrong >= 3;
+          const weightedMistake = progress.wrong >= 3 ? progress.wrong * 8 : progress.wrong * 2;
+          const stabilityPenalty = progress.asked >= 5 ? (100 - accuracy) * 0.45 : (100 - accuracy) * 0.12;
+          const score = enoughData ? weightedMistake + stabilityPenalty + missRate * 20 : 0;
+          const levelLabel = !enoughData ? 'まだ判定保留' : progress.wrong >= 5 ? 'かなり要復習' : progress.wrong >= 3 ? '要復習' : '少し復習';
+          return { ...element, ...progress, accuracy, score, enoughData, levelLabel };
+        }).filter((item) => item.enoughData && item.score > 0).sort((a, b) => b.score - a.score || b.wrong - a.wrong || a.number - b.number).slice(0, 20);
+      }
+      function calcAccuracy(correct, total) { if (!total) return 0; return Math.round((correct / total) * 100); }
+      function formatDate(timestamp) { return new Intl.DateTimeFormat('ja-JP', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }).format(new Date(timestamp)); }
+      function escapeHtml(text) { return String(text).replaceAll('&', '&amp;').replaceAll('<', '&lt;').replaceAll('>', '&gt;').replaceAll('"', '&quot;').replaceAll("'", '&#039;'); }
+    </script>
+  </body>
+</html>
